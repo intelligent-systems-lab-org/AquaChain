@@ -26,25 +26,25 @@ Rules:
 Justification: The nations within the Caribbean are impacted by the dry and rainy season, where replenishment of the natural resources occur during the latter season and conservation efforts are needed in the former.
 
 Rules: 	
-- **WaterToken:** A water token that is transacted every Xm^3 to the consumer. There is a flat rate at the start and then block rate increases as the reservoir capacity decreases during the dry season.
-- **WaterCapacityToken:** The amount that the consumer is contracted at the start. Once the contracted amount is completed the consumer is then charged per WaterToken*(1- ReserviorCapacityToken%) where for lower reservoir capacity the water rates increase in block.
-- **WasteToken:** The consumer is transacted a waste token every Xm^3 to be treated.
+- **WaterToken:** A water token that is transacted every $ X \ m^3 $ to the consumer. There is a flat rate at the start and then block rate increases as the reservoir capacity decreases during the dry season.
+- **WaterCapacityToken:** The amount that the consumer is contracted at the start. Once the contracted amount is completed the consumer is then charged per **WaterToken\*(1- ReservoirCapacityToken%)** where for lower reservoir capacity the water rates increase in block.
+- **WasteToken:** The consumer is transacted a waste token every $ X \ m^3$ to be treated.
 - **ReservoirCapacityToken:** The total water capacity within the reservoir.
 
 ### SC3: Seasonal Tariff (Decreasing block rate)
 Justification: The nations within the Caribbean are impacted by the dry and rainy season, where replenishment of the natural resources occur during the latter season and conservation efforts are needed in the former.
 
 Rules: 	
-- **WaterToken:** A water token that is transacted every Xm^3 to the consumer. There is a flat rate at the start which is determined based on the WaterCapacity contracted amount. Higher contracted Water Capacity selected results in higher contracted rate per Xm^3.
+- **WaterToken:** A water token that is transacted every $ X \ m^3$ to the consumer. There is a flat rate at the start which is determined based on the WaterCapacity contracted amount. Higher contracted Water Capacity selected results in higher contracted rate per $X \ m^3$.
 - **WaterCapacityToken:** The amount that the consumer is contracted at the start. If the WaterToken usage is less than the WaterToken 
-- **WasteToken:** The consumer is transacted a waste token every Xm^3 to be treated.
+- **WasteToken:** The consumer is transacted a waste token every $ X\ m^3$ to be treated.
 - **ReservoirCapacityToken:** The total water capacity within the reservoir.
 
 ### SC4: Geographic Tariff (Increasing block rate)
 Justification: Various sources of ground and surface water are used to supply various regions. If the resource being extracted from the user is severely depleted, conservation measures must be taken once the initial contracted amount is agreed.
 
 Rules: 	
-- **WaterToken:** A water token that is transacted every Xm^3 to the consumer. There is a flat rate at the start and then block rate increases as the reservoir capacity decreases.
-- **WaterCapacityToken:** The amount that the consumer is contracted at the start. Once the contracted amount is completed the consumer is then charged per WaterToken*(1- ReserviorCapacityToken%) where for lower reservoir capacity the water rates increase in block. In this case consumers can purchase Water Tokens from other users.  
-- **WasteToken:** The consumer is transacted a waste token every Xm^3 to be treated.
+- **WaterToken:** A water token that is transacted every $X \ m^3$ to the consumer. There is a flat rate at the start and then block rate increases as the reservoir capacity decreases.
+- **WaterCapacityToken:** The amount that the consumer is contracted at the start. Once the contracted amount is completed the consumer is then charged per **WaterToken\*(1- ReservoirCapacityToken%)** where for lower reservoir capacity the water rates increase in block. In this case consumers can purchase Water Tokens from other users.  
+- **WasteToken:** The consumer is transacted a waste token every $X \ m^3$ to be treated.
 - **ReservoirCapacityToken:** The water capacity within reservoir T.
