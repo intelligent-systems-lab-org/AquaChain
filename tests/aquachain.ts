@@ -2,7 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { Aquachain } from "../target/types/aquachain";
 import { PublicKey, Keypair } from "@solana/web3.js";
-import { createAccount, createMint, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
+import { createAccount, createMint } from "@solana/spl-token";
 import { assert } from "chai";
 
 describe("aquachain", () => {

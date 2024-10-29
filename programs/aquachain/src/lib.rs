@@ -107,8 +107,7 @@ pub mod aquachain {
                         from: ctx.accounts.consumer_watc.to_account_info(),
                         authority: ctx.accounts.consumer.to_account_info(),
                     },
-                )
-                .with_signer(signer_seeds),
+                ),
                 amount,
             )?;
         }
