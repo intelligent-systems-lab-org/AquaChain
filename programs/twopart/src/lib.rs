@@ -15,7 +15,7 @@ pub enum CustomError {
 }
 
 #[program]
-pub mod aquachain {
+pub mod twopart {
     use super::*;
 
     // Initialize the program state with provider and tariff details

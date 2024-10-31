@@ -5,7 +5,10 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-aquachain = "8Pq7ktrXscMpnabgCLXzqyv1iv2wWy8mTg8JSYYW4oFa"
+twopart = "8Pq7ktrXscMpnabgCLXzqyv1iv2wWy8mTg8JSYYW4oFa"
+geographical = "2X76PnikUodN6mVYFUUGQegXvctXefWcexkJJGpWgKyi"
+seasonal_inc = "ArBfA7Qd6t33oKiWsdFc7RxTzECzfEC3BHgmmKvZxqNQ"
+seasonal_dec = "ASENYNUVWkTCiEfKCiyZiBKXxRkcEfCCL7jWGgRDcpnY"
 
 [registry]
 url = "https://api.apr.dev"
