@@ -5,7 +5,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-twopart = "8Pq7ktrXscMpnabgCLXzqyv1iv2wWy8mTg8JSYYW4oFa"
+twopart = "8UK2jLDiWAHWEBS234LAnrnA9q7dGivV85NXhqobntYf"
 geographical = "2X76PnikUodN6mVYFUUGQegXvctXefWcexkJJGpWgKyi"
 seasonal_inc = "ArBfA7Qd6t33oKiWsdFc7RxTzECzfEC3BHgmmKvZxqNQ"
 seasonal_dec = "ASENYNUVWkTCiEfKCiyZiBKXxRkcEfCCL7jWGgRDcpnY"
@@ -19,3 +19,4 @@ wallet = "~/.config/solana/id.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+populateLocalnet = "npx ts-node scripts/populateLocalnet.ts"

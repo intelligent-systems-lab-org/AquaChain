@@ -2,7 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { Twopart } from "../target/types/twopart";
 import { PublicKey, Keypair } from "@solana/web3.js";
-import { createAccount, createMint } from "@solana/spl-token";
+import { createMint, getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
 import { assert } from "chai";
 
 describe("two part", () => {
@@ -36,24 +36,26 @@ describe("two part", () => {
     wstMint = await createMint(connection, wallet.payer, tariff, null, 9);
 
     // Create token accounts
-    consumerWtkAccount = await createAccount(
+    consumerWtkAccount = await getOrCreateAssociatedTokenAccount(
       connection,
       wallet.payer,
       wtkMint,
       consumer.publicKey
-    );
-    consumerWatcAccount = await createAccount(
+    ).then((account) => account.address);
+
+    consumerWatcAccount = await getOrCreateAssociatedTokenAccount(
       connection,
       wallet.payer,
       watcMint,
       consumer.publicKey
-    );
-    consumerWstAccount = await createAccount(
+    ).then((account) => account.address);
+
+    consumerWstAccount = await getOrCreateAssociatedTokenAccount(
       connection,
       wallet.payer,
       wstMint,
       consumer.publicKey
-    );
+    ).then((account) => account.address);
 
     await program.methods
       .initialize(new anchor.BN(2), new anchor.BN(3))
@@ -74,7 +76,6 @@ describe("two part", () => {
       .accounts({
         consumer: consumer.publicKey,
         agency: wallet.publicKey,
-        consumerWatc: consumerWatcAccount,
         watcMint: watcMint,
       })
       .signers([consumer])
@@ -99,8 +100,6 @@ describe("two part", () => {
       .useWater(new anchor.BN(50))
       .accounts({
         consumer: consumer.publicKey,
-        consumerWtk: consumerWtkAccount,
-        consumerWatc: consumerWatcAccount,
         wtkMint: wtkMint,
         watcMint: watcMint,
         agency: wallet.publicKey,
@@ -114,7 +113,6 @@ describe("two part", () => {
       .disposeWaste(new anchor.BN(30))
       .accounts({
         consumer: consumer.publicKey,
-        consumerWst: consumerWstAccount,
         wstMint: wstMint,
         agency: wallet.publicKey,
       })
