@@ -40,6 +40,16 @@ const getTariffPDA = async (): Promise<PublicKey> => {
   return tariffPDA;
 };
 
+const authenticateToken = (req: Request, res: Response, next: Function) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+
+  if (!token || token !== process.env.API_TOKEN) {
+    return res.sendStatus(403); // Forbidden
+  }
+  next();
+};
+
 // POST endpoint to initialize tariff rates
 app.post("/initialize", async (req: Request, res: Response): Promise<any> => {
   try {

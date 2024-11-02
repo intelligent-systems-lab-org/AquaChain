@@ -1,16 +1,16 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
-import { SeasonalInc } from "../target/types/seasonal_inc";
+import { Twopart } from "../target/types/twopart";
 import { PublicKey, Keypair } from "@solana/web3.js";
-import { createAccount, createMint } from "@solana/spl-token";
+import { createMint, getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
 import { assert } from "chai";
 
-describe("seasonal_inc", () => {
+describe("two part", () => {
   // Configure the client to use the local cluster.
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
 
-  const program = anchor.workspace.SeasonalInc as Program<SeasonalInc>;
+  const program = anchor.workspace.Twopart as Program<Twopart>;
   const connection = provider.connection;
   const wallet = provider.wallet as anchor.Wallet;
 
@@ -36,24 +36,26 @@ describe("seasonal_inc", () => {
     wstMint = await createMint(connection, wallet.payer, tariff, null, 9);
 
     // Create token accounts
-    consumerWtkAccount = await createAccount(
+    consumerWtkAccount = await getOrCreateAssociatedTokenAccount(
       connection,
       wallet.payer,
       wtkMint,
       consumer.publicKey
-    );
-    consumerWatcAccount = await createAccount(
+    ).then((account) => account.address);
+
+    consumerWatcAccount = await getOrCreateAssociatedTokenAccount(
       connection,
       wallet.payer,
       watcMint,
       consumer.publicKey
-    );
-    consumerWstAccount = await createAccount(
+    ).then((account) => account.address);
+
+    consumerWstAccount = await getOrCreateAssociatedTokenAccount(
       connection,
       wallet.payer,
       wstMint,
       consumer.publicKey
-    );
+    ).then((account) => account.address);
 
     await program.methods
       .initialize(new anchor.BN(2), new anchor.BN(3))
@@ -74,7 +76,6 @@ describe("seasonal_inc", () => {
       .accounts({
         consumer: consumer.publicKey,
         agency: wallet.publicKey,
-        consumerWatc: consumerWatcAccount,
         watcMint: watcMint,
       })
       .signers([consumer])
@@ -94,13 +95,31 @@ describe("seasonal_inc", () => {
     assert.equal(consumerWatcBalance.value.amount, "100"); // Should match contracted capacity
   });
 
+  it("Tariff can update rates", async () => {
+    await program.methods
+      .updateRates(new anchor.BN(3), new anchor.BN(4))
+      .accounts({
+        agency: wallet.publicKey,
+      })
+      .rpc();
+
+    const [tariff, _] = PublicKey.findProgramAddressSync(
+      [Buffer.from("tariff")],
+      program.programId
+    );
+
+    const stateAccount = await program.account.tariff.fetch(tariff);
+
+    // Assert that the water and waste rates are updated as expected
+    assert.equal(stateAccount.waterRate.toNumber(), 3);
+    assert.equal(stateAccount.wasteRate.toNumber(), 4);
+  })
+
   it("Consumer can use water within contracted capacity", async () => {
     await program.methods
-      .useWater(new anchor.BN(50), new anchor.BN(60), new anchor.BN(40))
+      .useWater(new anchor.BN(50))
       .accounts({
         consumer: consumer.publicKey,
-        consumerWtk: consumerWtkAccount,
-        consumerWatc: consumerWatcAccount,
         wtkMint: wtkMint,
         watcMint: watcMint,
         agency: wallet.publicKey,
@@ -114,7 +133,6 @@ describe("seasonal_inc", () => {
       .disposeWaste(new anchor.BN(30))
       .accounts({
         consumer: consumer.publicKey,
-        consumerWst: consumerWstAccount,
         wstMint: wstMint,
         agency: wallet.publicKey,
       })
