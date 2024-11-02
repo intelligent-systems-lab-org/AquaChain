@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{associated_token::AssociatedToken, token::{ self, Mint, Token, TokenAccount }};
-use crate::{consumer::Consumer, tariff::{ Tariff, TariffType }};
+use crate::{consumer::Consumer, tariff::{ Tariff, TariffType, CustomError }};
 
 #[derive(Accounts)]
 pub struct UseWater<'info> {
@@ -49,14 +49,16 @@ pub struct DisposeWaste<'info> {
 
 pub fn use_water(
     ctx: Context<UseWater>,
-    amount: u64,
+    amount: f64,
 ) -> Result<()> {
     let consumer = &mut ctx.accounts.consumer;
     let tariff = &ctx.accounts.tariff;
 
+    require!(amount > 0.0, CustomError::InvalidAmount);
+
     // Apply block rate or standard rate based on the consumer's contracted capacity
-    let consumer_watc_balance = ctx.accounts.consumer_watc.amount;
-    let threshold = consumer.contracted_capacity;
+    let consumer_watc_balance = ctx.accounts.consumer_watc.amount as f64;
+    let threshold = consumer.contracted_capacity as f64;
 
     let (level, level_max) = (tariff.reservoir_level, tariff.reservoir_capacity);
 
@@ -64,19 +66,17 @@ pub fn use_water(
         amount * tariff.water_rate
     } else {
         match tariff.tariff_type {
-            TariffType::TwoPart => {
-                tariff.water_rate * threshold + consumer.block_rate * (amount - threshold)
+            TariffType::UniformIBT => {
+                amount * (tariff.water_rate * threshold + consumer.block_rate * (amount - threshold))
             },
-            TariffType::SeasonalIncr => {
-                amount * tariff.water_rate
+            TariffType::SeasonalIBT => {
+                amount * (tariff.water_rate + consumer.block_rate * (level_max - level))
             },
-            TariffType::SeasonalDecr => {
-                amount * tariff.water_rate
-            },
-            TariffType::Geographical => {
-                amount * tariff.water_rate + consumer.block_rate * (level_max - level)
-            },
+            TariffType::SeasonalDBT => {
+                amount * (tariff.water_rate - consumer.block_rate * (1.0 - (level / level_max)))
+            }
         }
+        
     };
 
     let signer_seeds: &[&[&[u8]]] = &[&[b"tariff", &[ctx.bumps.tariff]]];
@@ -91,7 +91,7 @@ pub fn use_water(
             },
         )
         .with_signer(signer_seeds),
-        total_cost,
+        total_cost as u64,
     )?;
 
     // Deduct WATC tokens if within capacity
@@ -105,7 +105,7 @@ pub fn use_water(
                     authority: ctx.accounts.consumer.to_account_info(),
                 },
             ),
-            amount,
+            amount as u64,
         )?;
     }
     msg!("Consumer used {} units of water, charged: {}.", amount, total_cost);
@@ -114,9 +114,11 @@ pub fn use_water(
 
 pub fn dispose_waste(
     ctx: Context<DisposeWaste>,
-    amount: u64,
+    amount: f64,
 ) -> Result<()> {
     let tariff = &ctx.accounts.tariff;
+
+    require!(amount > 0.0, CustomError::InvalidAmount);
 
     // Calculate the total cost based on the waste rate
     let total_cost = amount * tariff.waste_rate;
@@ -133,7 +135,7 @@ pub fn dispose_waste(
             },
         )
         .with_signer(signer_seeds),
-        total_cost,
+        total_cost as u64,
     )?;
 
     msg!("Disposed {} units of waste and paid {} WasteTokens.", amount, total_cost);

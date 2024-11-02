@@ -2,10 +2,9 @@ use anchor_lang::prelude::*;
 
 #[derive(InitSpace, AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, Eq, PartialEq)]
 pub enum TariffType {
-    TwoPart,
-    SeasonalIncr,
-    SeasonalDecr,
-    Geographical
+    UniformIBT,
+    SeasonalIBT,
+    SeasonalDBT
 }
 
 pub const DISCRIMINATOR: usize = 8;
@@ -18,18 +17,20 @@ pub enum CustomError {
     #[msg("Invalid rate: must be greater than zero.")]
     InvalidRate,
     #[msg("Invalid reservoir level: must be greater than zero.")]
-    InvalidReservoirLevel
+    InvalidReservoirLevel,
+    #[msg("Invalid amount: must be greater than zero.")]
+    InvalidAmount
 }
 
 // Define the program state and tariff details
 #[account]
 #[derive(InitSpace)]
 pub struct Tariff {
-    pub water_rate: u64,
-    pub waste_rate: u64,
+    pub water_rate: f64,
+    pub waste_rate: f64,
     pub tariff_type: TariffType,
-    pub reservoir_level: u64,
-    pub reservoir_capacity: u64
+    pub reservoir_level: f64,
+    pub reservoir_capacity: f64
 }
 
 #[derive(Accounts)]
@@ -60,18 +61,18 @@ pub struct UpdateTariff<'info> {
 // Initialize the program state with provider and tariff details
 pub fn initialize(
     ctx: Context<Initialize>,
-    water_rate: u64,
-    waste_rate: u64,
+    water_rate: f64,
+    waste_rate: f64,
     tariff_type: TariffType,
-    reservoir_level: u64,
-    reservoir_capacity: u64
+    reservoir_level: f64,
+    reservoir_capacity: f64
 ) -> Result<()> {
     let tariff = &mut ctx.accounts.tariff;
 
-    require!(water_rate > 0, CustomError::InvalidRate);
-    require!(waste_rate > 0, CustomError::InvalidRate);
-    require!(reservoir_level > 0, CustomError::InvalidReservoirLevel);
-    require!(reservoir_capacity > 0, CustomError::InvalidReservoirLevel);
+    require!(water_rate > 0.0, CustomError::InvalidRate);
+    require!(waste_rate > 0.0, CustomError::InvalidRate);
+    require!(reservoir_level > 0.0, CustomError::InvalidReservoirLevel);
+    require!(reservoir_capacity > 0.0, CustomError::InvalidReservoirLevel);
 
     tariff.water_rate = water_rate;
     tariff.waste_rate = waste_rate;
@@ -85,13 +86,13 @@ pub fn initialize(
 
 pub fn update_rates(
     ctx: Context<UpdateTariff>,
-    water_rate: u64,
-    waste_rate: u64
+    water_rate: f64,
+    waste_rate: f64
 ) -> Result<()> {
     let tariff = &mut ctx.accounts.tariff;
 
-    require!(water_rate > 0, CustomError::InvalidRate);
-    require!(waste_rate > 0, CustomError::InvalidRate);
+    require!(water_rate > 0.0, CustomError::InvalidRate);
+    require!(waste_rate > 0.0, CustomError::InvalidRate);
 
     tariff.water_rate = water_rate;
     tariff.waste_rate = waste_rate;
@@ -114,13 +115,13 @@ pub fn update_tariff_type(
 
 pub fn update_reservoir_levels(
     ctx: Context<UpdateTariff>,
-    reservoir_level: u64,
-    reservoir_capacity: u64
+    reservoir_level: f64,
+    reservoir_capacity: f64
 ) -> Result<()> {
     let tariff = &mut ctx.accounts.tariff;
 
-    require!(reservoir_level > 0, CustomError::InvalidReservoirLevel);
-    require!(reservoir_capacity > 0, CustomError::InvalidReservoirLevel);
+    require!(reservoir_level > 0.0, CustomError::InvalidReservoirLevel);
+    require!(reservoir_capacity > 0.0, CustomError::InvalidReservoirLevel);
 
     tariff.reservoir_level = reservoir_level;
     tariff.reservoir_capacity = reservoir_capacity;

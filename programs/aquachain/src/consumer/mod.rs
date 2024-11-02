@@ -6,7 +6,7 @@ use crate::tariff::*;
 #[account]
 #[derive(InitSpace)]
 pub struct Consumer {
-    pub block_rate: u64,
+    pub block_rate: f64,
     pub contracted_capacity: u64
 }
 
@@ -49,13 +49,13 @@ pub struct UpdateConsumer<'info> {
 pub fn register_consumer(
     ctx: Context<RegisterConsumer>,
     contracted_capacity: u64,
-    block_rate: u64,
+    block_rate: f64,
 ) -> Result<()> {
     let consumer = &mut ctx.accounts.consumer;
 
     // Validation: Ensure capacity and rate are non-zero
     require!(contracted_capacity > 0, CustomError::InvalidCapacity);
-    require!(block_rate > 0, CustomError::InvalidRate);
+    require!(block_rate > 0.0, CustomError::InvalidRate);
 
     consumer.block_rate = block_rate;
     consumer.contracted_capacity = contracted_capacity;
@@ -82,13 +82,13 @@ pub fn register_consumer(
 pub fn update_consumer(
     ctx: Context<UpdateConsumer>,
     contracted_capacity: u64,
-    block_rate: u64,
+    block_rate: f64,
 ) -> Result<()> {
     let consumer = &mut ctx.accounts.consumer;
 
     // Validation: Ensure capacity and rate are non-zero
     require!(contracted_capacity > 0, CustomError::InvalidCapacity);
-    require!(block_rate > 0, CustomError::InvalidRate);
+    require!(block_rate > 0.0, CustomError::InvalidRate);
 
     consumer.block_rate = block_rate;
     consumer.contracted_capacity = contracted_capacity;
