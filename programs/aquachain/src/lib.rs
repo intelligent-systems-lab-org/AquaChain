@@ -56,6 +56,28 @@ pub mod aquachain {
     ) -> Result<()> {
         instructions::update_reservoir(ctx, reservoir_key, current_level, capacity)
     }
+
+    pub fn register_consumer(
+        ctx: Context<RegisterConsumer>,
+        tariff_key: Pubkey,
+        reservoir_key: Pubkey,
+        contracted_capacity: u64,
+        block_rate: f64,
+    ) -> Result<()>
+    {
+        instructions::register_consumer(ctx, tariff_key, reservoir_key, contracted_capacity, block_rate)
+    }
+
+    // update consumer
+    // use water
+
+    pub fn dispose_waste(
+        ctx: Context<DisposeWaste>,
+        tariff_key: Pubkey,
+        amount: f64,
+    ) -> Result<()> {
+        instructions::dispose_waste(ctx, tariff_key, amount)
+    }
 }
 
 
