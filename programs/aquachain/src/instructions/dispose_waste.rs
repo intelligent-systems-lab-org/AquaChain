@@ -52,7 +52,7 @@ pub fn dispose_waste(
                 mint: ctx.accounts.wst_mint.to_account_info(),
             },
         ),
-        total_cost as u64,
+        total_cost.ceil() as u64,
     )?;
 
     msg!("Disposed {} units of waste and charged {} WasteTokens.", amount, total_cost);

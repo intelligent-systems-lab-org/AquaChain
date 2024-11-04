@@ -22,14 +22,14 @@ describe("consumer", () => {
   let reservoirKey: PublicKey;
   let consumer: Keypair;
 
-  const initialWaterRate = 1/1000;
-  const initialWasteRate = 1/100;
+  const initialWaterRate = 5;
+  const initialWasteRate = 2;
 
   const initialReservoirLevel = 950000;
   const initialReservoirCapacity = 1000000;
 
   const initialContractedCapacity = 100000;
-  const initialBlockRate = 1/500;
+  const initialBlockRate = 8;
 
   before(async () => {
     // Initialize accounts
