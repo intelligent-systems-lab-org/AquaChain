@@ -34,10 +34,11 @@ pub fn initialize_tariff(
     require!(water_rate > 0.0, CustomError::InvalidRate);
     require!(waste_rate > 0.0, CustomError::InvalidRate);
 
+    tariff.tariff_key = tariff_key;
     tariff.water_rate = water_rate;
     tariff.waste_rate = waste_rate;
     tariff.tariff_type = tariff_type;
-    tariff.tariff_key = tariff_key;
+
 
     msg!("Tariff initialized for tariff {} with rates.", tariff_key);
     Ok(())

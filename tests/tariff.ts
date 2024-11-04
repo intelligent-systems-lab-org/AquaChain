@@ -5,7 +5,7 @@ import { PublicKey, Keypair } from "@solana/web3.js";
 import { createMint, getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
 import { assert } from "chai";
 
-describe("aquachain", () => {
+describe("tariff", () => {
   // Configure the client to use the local cluster.
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
@@ -35,7 +35,6 @@ describe("aquachain", () => {
       [Buffer.from("tariff"), wallet.publicKey.toBuffer(), tariffKey.toBuffer()],
       program.programId
     );
-    console.log("Tariff PDA:", tariffPDA.toBase58());
     consumer = Keypair.generate();
 
     // Initialize token mints
@@ -155,10 +154,9 @@ describe("aquachain", () => {
     const newWasteRate = 7.0;
 
     await program.methods
-      .updateTariffRates(newWaterRate, newWasteRate)
+      .updateTariffRates(tariffKey, newWaterRate, newWasteRate)
       .accounts({
-        agency: wallet.publicKey,
-        tariff: tariffPDA,
+        agency: wallet.publicKey
       })
       .rpc();
 
@@ -170,10 +168,9 @@ describe("aquachain", () => {
 
   it("should update tariff type on the initialized tariff", async () => {
     await program.methods
-      .updateTariffType({ seasonalDbt: {} })
+      .updateTariffType(tariffKey, { seasonalDbt: {} })
       .accounts({
-        agency: wallet.publicKey,
-        tariff: tariffPDA,
+        agency: wallet.publicKey
       })
       .rpc();
 
