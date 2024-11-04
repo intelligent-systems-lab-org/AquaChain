@@ -80,7 +80,7 @@ describe("consumer", () => {
       .accounts({
         consumer: consumer.publicKey,
         agency: wallet.publicKey,
-        watcMint: watcMint,
+        watcMint: watcMint
       })
       .signers([consumer])
       .rpc();
@@ -98,5 +98,30 @@ describe("consumer", () => {
     const consumerWatcBalance =
       await provider.connection.getTokenAccountBalance(consumerWatcAccount);
     assert.equal(consumerWatcBalance.value.amount, initialContractedCapacity.toString()); // Should match contracted capacity
+  });
+
+  it("should update rates on the initialized consumer", async () => {
+    let newContractedCapacity = 200000;
+    let newBlockRate = 1/1000;
+
+    await program.methods
+      .updateConsumer(tariffKey, reservoirKey, new anchor.BN(newContractedCapacity), newBlockRate)
+      .accounts({
+        consumer: consumer.publicKey,
+        agency: wallet.publicKey,
+        watcMint: watcMint
+      })
+      .signers([consumer])
+      .rpc();
+
+    // Assert that the consumer's configuration is expected
+    const consumerAccount = await program.account.consumer.fetch(consumer.publicKey);
+    assert.equal(consumerAccount.contractedCapacity.toNumber(), newContractedCapacity);
+    assert.equal(consumerAccount.blockRate, newBlockRate);
+
+    // Check the balance of WATC tokens in the consumer's account
+    const consumerWatcBalance =
+      await provider.connection.getTokenAccountBalance(consumerWatcAccount);
+    assert.equal(consumerWatcBalance.value.amount, newContractedCapacity.toString());
   });
 });

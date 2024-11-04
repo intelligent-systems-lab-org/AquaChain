@@ -1,6 +1,6 @@
 pub const DISCRIMINATOR: usize = 8;
 
-mod dispose_water;
+mod dispose_waste;
 mod initialize_reservoir;
 mod initialize_tariff;
 mod register_consumer;
@@ -9,7 +9,7 @@ mod update_consumer;
 mod update_tariff;
 mod use_water;
 
-pub use dispose_water::*;
+pub use dispose_waste::*;
 pub use initialize_reservoir::*;
 pub use initialize_tariff::*;
 pub use register_consumer::*;
