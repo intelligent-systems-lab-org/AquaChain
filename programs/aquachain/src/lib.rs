@@ -78,6 +78,22 @@ pub mod aquachain {
         instructions::update_consumer(ctx, tariff_key, reservoir_key, contracted_capacity, block_rate)
     }
 
+    pub fn update_consumer_tariff(
+        ctx: Context<UpdateConsumerTariff>,
+        current_tariff_key: Pubkey,
+        new_tariff_key: Pubkey,
+    ) -> Result<()> {
+        instructions::update_consumer_tariff(ctx, current_tariff_key, new_tariff_key)
+    }
+
+    pub fn update_consumer_reservoir(
+        ctx: Context<UpdateConsumerReservoir>,
+        current_reservoir_key: Pubkey,
+        new_reservoir_key: Pubkey,
+    ) -> Result<()> {
+        instructions::update_consumer_reservoir(ctx, current_reservoir_key, new_reservoir_key)
+    }
+
     // use water
 
     pub fn dispose_waste(

@@ -124,4 +124,86 @@ describe("consumer", () => {
       await provider.connection.getTokenAccountBalance(consumerWatcAccount);
     assert.equal(consumerWatcBalance.value.amount, newContractedCapacity.toString());
   });
+
+  it("should update consumer's assigned tariff", async () => {
+    // Test values for new tariff
+    const newWaterRate = 2 / 1000;
+    const newWasteRate = 2 / 100;
+
+    const newTariffKey = Keypair.generate().publicKey;
+    const [newTariffPDA] = PublicKey.findProgramAddressSync(
+      [Buffer.from("tariff"), wallet.publicKey.toBuffer(), newTariffKey.toBuffer()],
+      program.programId
+    );
+
+    await program.methods
+      .initializeTariff(newTariffKey, newWaterRate, newWasteRate, { uniformIbt: {} })
+      .accounts({
+        agency: wallet.publicKey,
+      })
+      .rpc();
+
+    await program.methods
+      .updateConsumerTariff(tariffKey, newTariffKey)
+      .accounts({
+        consumer: consumer.publicKey,
+        agency: wallet.publicKey,
+      })
+      .rpc();
+
+    const consumerAccount = await program.account.consumer.fetch(consumer.publicKey);
+    assert.equal(consumerAccount.assignedTariff.toBase58(), newTariffKey.toBase58());
+
+    const [consumerTariffPDA] = PublicKey.findProgramAddressSync(
+        [Buffer.from("tariff"), wallet.publicKey.toBuffer(), consumerAccount.assignedTariff.toBuffer()],
+        program.programId
+    )
+
+    // Verify that the consumer is now affected by the new tariff rates
+    const updatedTariff = await program.account.tariff.fetch(newTariffPDA);
+    const consumerTariff = await program.account.tariff.fetch(consumerTariffPDA);
+    assert.equal(updatedTariff.waterRate, consumerTariff.waterRate);
+    assert.equal(updatedTariff.wasteRate, consumerTariff.wasteRate);
+  });
+
+  it("should update consumer's assigned reservoir", async () => {
+    // Test values for new tariff reservoir
+    const newReservoirLevel = 800000;
+    const newReservoirCapacity = 900000;
+
+    const newReservoirKey = Keypair.generate().publicKey;
+    const [newReservoirPDA] = PublicKey.findProgramAddressSync(
+      [Buffer.from("reservoir"), wallet.publicKey.toBuffer(), newReservoirKey.toBuffer()],
+      program.programId
+    );
+
+    await program.methods
+      .initializeReservoir(newReservoirKey, newReservoirLevel, newReservoirCapacity)
+      .accounts({
+        agency: wallet.publicKey,
+      })
+      .rpc();
+
+    await program.methods
+      .updateConsumerReservoir(reservoirKey, newReservoirKey)
+      .accounts({
+        consumer: consumer.publicKey,
+        agency: wallet.publicKey,
+      })
+      .rpc();
+
+    const consumerAccount = await program.account.consumer.fetch(consumer.publicKey);
+    assert.equal(consumerAccount.assignedReservoir.toBase58(), newReservoirKey.toBase58());
+
+    const [consumerReservoirPDA] = PublicKey.findProgramAddressSync(
+        [Buffer.from("reservoir"), wallet.publicKey.toBuffer(), consumerAccount.assignedReservoir.toBuffer()],
+        program.programId
+      );
+
+    // Verify that the consumer is now affected by the new reservoir rates
+    const updatedReservoir = await program.account.reservoir.fetch(newReservoirPDA);
+    const consumerReservoir = await program.account.reservoir.fetch(consumerReservoirPDA);
+    assert.equal(updatedReservoir.currentLevel, consumerReservoir.currentLevel);
+    assert.equal(updatedReservoir.capacity, consumerReservoir.capacity);
+  });
 });
