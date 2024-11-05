@@ -6,7 +6,7 @@ import { Keypair, PublicKey } from "@solana/web3.js";
 import { Aquachain } from "../../target/types/aquachain";
 import idl from "../../target/idl/aquachain.json";
 
-import { TariffRequest, isValidTariffType, convertTariffType, TariffTypeString } from "./types";
+import { TariffRequest, isValidTariffType, convertStringToTariffType, convertTariffTypeToString, TariffTypeString } from "./types/tariff";
 
 dotenv.config();
 
@@ -44,6 +44,22 @@ const getTariffPDA = async (key: PublicKey): Promise<PublicKey> => {
   return tariffPDA;
 };
 
+// Helper function to fetch a tariff by its PDA
+const fetchTariff = async (tariffPDA: PublicKey) => {
+  try {
+    const tariffAccount = await program.account.tariff.fetch(tariffPDA);
+    return {
+      tariffkey: tariffAccount.tariffKey.toString(),
+      water_rate: tariffAccount.waterRate.toNumber(),
+      waste_rate: tariffAccount.wasteRate.toNumber(),
+      tariff_type: convertTariffTypeToString(tariffAccount.tariffType),
+    };
+  } catch (error) {
+    console.error("Failed to fetch tariff:", error);
+    return null;
+  }
+};
+
 const authenticateToken = (req: Request, res: Response, next: Function) => {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
@@ -54,7 +70,6 @@ const authenticateToken = (req: Request, res: Response, next: Function) => {
   next();
 };
 
-// POST endpoint to initialize tariff rates
 // POST endpoint to initialize tariff rates
 app.post("/tariff/create", async (req: Request, res: Response): Promise<any> => {
   try {
@@ -78,7 +93,7 @@ app.post("/tariff/create", async (req: Request, res: Response): Promise<any> => 
     }
 
     // Convert string to required TariffType object format
-    const convertedTariffType = convertTariffType(chosenTariffType);
+    const convertedTariffType = convertStringToTariffType(chosenTariffType);
 
     const tariffKey = Keypair.generate().publicKey;
     const tariffPDA = await getTariffPDA(tariffKey);
@@ -106,22 +121,41 @@ app.post("/tariff/create", async (req: Request, res: Response): Promise<any> => 
   }
 });
 
-// GET endpoint to retrieve tariff rates
-// app.get("/initialize", async (req: Request, res: Response): Promise<any> => {
-//   try {
-//     const tariffPDA = await getTariffPDA();
-//     const tariffAccount = await program.account.tariff.fetch(tariffPDA);
+// GET endpoint to retrieve a specific tariff by pubkey or list all tariffs
+app.get("/tariff", async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { pubkey } = req.query;
 
-//     res.status(200).json({
-//       tariffAddress: tariffPDA.toString(),
-//       water_rate: tariffAccount.waterRate.toNumber(),
-//       waste_rate: tariffAccount.wasteRate.toNumber(),
-//     });
-//   } catch (error) {
-//     console.error("Error fetching tariff account:", error);
-//     res.status(500).json({ error: "Failed to fetch tariff account" });
-//   }
-// });
+    if (pubkey) {
+      // Retrieve a specific tariff by its public key
+      const tariffPDA = await getTariffPDA(new PublicKey(pubkey as string));
+      const tariffData = await fetchTariff(tariffPDA);
+
+      if (!tariffData) {
+        return res.status(404).json({ error: "Tariff not found" });
+      }
+
+      return res.status(200).json(tariffData);
+    } else {
+      // List all tariffs by iterating through all accounts
+      const tariffs = await program.account.tariff.all();
+
+      const tariffList = tariffs.map((tariff) => {
+        return {
+          tariffKey: tariff.account.tariffKey.toString(),
+          water_rate: tariff.account.waterRate.toNumber(),
+          waste_rate: tariff.account.wasteRate.toNumber(),
+          tariff_type: convertTariffTypeToString(tariff.account.tariffType),
+        };
+      });
+
+      return res.status(200).json(tariffList);
+    }
+  } catch (error) {
+    console.error("Failed to retrieve tariffs:", error);
+    res.status(500).json({ error: "Failed to retrieve tariffs" });
+  }
+});
 
 app.listen(port, () => {
   console.log(`[server]: Server is running at http://localhost:${port}`);
