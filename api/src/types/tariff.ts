@@ -1,4 +1,3 @@
-
 type uniformIbt = { uniformIbt: {} };
 type seasonalIbt = { seasonalIbt: {} };
 type seasonalDbt = { seasonalDbt: {} };
@@ -13,35 +12,44 @@ interface TariffRequest {
 }
 
 function isValidTariffType(tariff_type: TariffTypeString): boolean {
-    const validTypes: TariffTypeString[] = ["uniformIbt", "seasonalIbt", "seasonalDbt"];
-    return validTypes.includes(tariff_type);
+  const validTypes: TariffTypeString[] = [
+    "uniformIbt",
+    "seasonalIbt",
+    "seasonalDbt",
+  ];
+  return validTypes.includes(tariff_type);
 }
 
 function convertStringToTariffType(tariff_type: TariffTypeString): TariffType {
-    switch (tariff_type) {
-        case "uniformIbt":
-            return { uniformIbt: {} };
-        case "seasonalIbt":
-            return { seasonalIbt: {} };
-        case "seasonalDbt":
-            return { seasonalDbt: {} };
-        default:
-            throw new Error("Invalid tariff type");
-    }
+  switch (tariff_type) {
+    case "uniformIbt":
+      return { uniformIbt: {} };
+    case "seasonalIbt":
+      return { seasonalIbt: {} };
+    case "seasonalDbt":
+      return { seasonalDbt: {} };
+    default:
+      throw new Error("Invalid tariff type");
+  }
 }
 
 function convertTariffTypeToString(tariff_type: TariffType): TariffTypeString {
-    if ("uniformIbt" in tariff_type) {
-        return "uniformIbt";
-    } else if ("seasonalIbt" in tariff_type) {
-        return "seasonalIbt";
-    } else if ("seasonalDbt" in tariff_type) {
-        return "seasonalDbt";
-    } else {
-        throw new Error("Invalid tariff type");
-    }
+  if ("uniformIbt" in tariff_type) {
+    return "uniformIbt";
+  } else if ("seasonalIbt" in tariff_type) {
+    return "seasonalIbt";
+  } else if ("seasonalDbt" in tariff_type) {
+    return "seasonalDbt";
+  } else {
+    throw new Error("Invalid tariff type");
+  }
 }
 
 export {
-    TariffRequest, TariffType, TariffTypeString, isValidTariffType, convertStringToTariffType, convertTariffTypeToString
-}
+  TariffRequest,
+  TariffType,
+  TariffTypeString,
+  isValidTariffType,
+  convertStringToTariffType,
+  convertTariffTypeToString,
+};

@@ -1,6 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
-import { Keypair, PublicKey, Connection } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import { Aquachain } from "../../../target/types/aquachain";
 import idl from "../../../target/idl/aquachain.json";
 import dotenv from "dotenv";
@@ -27,4 +27,13 @@ const wallet = provider.wallet as anchor.Wallet;
 
 const program = new Program<Aquachain>(idl as Aquachain, provider);
 
-export { connection, wallet, program };
+// Utility to derive the PDA
+const getPDA = async (seed: String, key: PublicKey): Promise<PublicKey> => {
+  const [PDA] = PublicKey.findProgramAddressSync(
+    [Buffer.from(seed), wallet.publicKey.toBuffer(), key.toBuffer()],
+    program.programId
+  );
+  return PDA;
+};
+
+export { connection, wallet, program, getPDA };
