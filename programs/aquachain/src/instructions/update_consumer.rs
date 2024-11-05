@@ -1,6 +1,12 @@
+use crate::{
+    state::{Consumer, Reservoir, Tariff},
+    CustomError,
+};
 use anchor_lang::prelude::*;
-use anchor_spl::{associated_token::AssociatedToken, token::{ self, Mint, Token, TokenAccount }};
-use crate::{ CustomError, state::{ Consumer, Tariff, Reservoir }};
+use anchor_spl::{
+    associated_token::AssociatedToken,
+    token::{self, Mint, Token, TokenAccount},
+};
 
 #[derive(Accounts)]
 #[instruction(tariff_key: Pubkey, reservoir_key: Pubkey)]
@@ -15,7 +21,7 @@ pub struct UpdateConsumer<'info> {
         ],
         bump
     )]
-    pub tariff: Account<'info, Tariff>,  // Tariff assigned to this consumer
+    pub tariff: Account<'info, Tariff>, // Tariff assigned to this consumer
     #[account(
         seeds = [
             b"reservoir",
@@ -24,16 +30,16 @@ pub struct UpdateConsumer<'info> {
         ],
         bump
     )]
-    pub reservoir: Account<'info, Reservoir>,  // Reservoir assigned to this consumer
+    pub reservoir: Account<'info, Reservoir>, // Reservoir assigned to this consumer
     #[account(mut)]
     pub agency: Signer<'info>,
     #[account(mut, associated_token::mint = watc_mint,  associated_token::authority = consumer)]
-    pub consumer_watc: Account<'info, TokenAccount>,  // Consumer's WaterCapacityToken account
+    pub consumer_watc: Account<'info, TokenAccount>, // Consumer's WaterCapacityToken account
     #[account(mut, mint::authority = agency, mint::decimals = 9)]
-    pub watc_mint: Account<'info, Mint>,  // Mint for the WaterCapacityToken
+    pub watc_mint: Account<'info, Mint>, // Mint for the WaterCapacityToken
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
-    pub associated_token_program: Program<'info, AssociatedToken>
+    pub associated_token_program: Program<'info, AssociatedToken>,
 }
 
 pub fn update_consumer(
@@ -48,7 +54,11 @@ pub fn update_consumer(
     let reservoir = &ctx.accounts.reservoir;
 
     require_keys_eq!(tariff_key, tariff.tariff_key, CustomError::Unauthorized);
-    require_keys_eq!(reservoir_key, reservoir.reservoir_key, CustomError::Unauthorized);
+    require_keys_eq!(
+        reservoir_key,
+        reservoir.reservoir_key,
+        CustomError::Unauthorized
+    );
 
     // Validation: Ensure capacity and rate are non-zero
     require!(contracted_capacity > 0, CustomError::InvalidCapacity);
@@ -87,4 +97,4 @@ pub fn update_consumer(
 
     msg!("Consumer block rate and consumer capacity updated.");
     Ok(())
-}  
+}

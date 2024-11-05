@@ -29,10 +29,10 @@ describe("tariffs", () => {
   const initialWaterRate = 5;
   const initialWasteRate = 2;
 
-  const initialReservoirLevel = 950000;
-  const initialReservoirCapacity = 1000000;
+  const initialReservoirLevel = 9500;
+  const initialReservoirCapacity = 10000;
 
-  const initialContractedCapacity = 100000;
+  const initialContractedCapacity = 1000;
   const initialBlockRate = 8;
 
   before(async () => {
@@ -106,18 +106,32 @@ describe("tariffs", () => {
       .rpc();
   });
 
-  // it("Consumer can use water within contracted capacity", async () => {
-  //   await program.methods
-  //     .useWater(new anchor.BN(50))
-  //     .accounts({
-  //       consumer: consumer.publicKey,
-  //       wtkMint: wtkMint,
-  //       watcMint: watcMint,
-  //       agency: wallet.publicKey,
-  //     })
-  //     .signers([consumer])
-  //     .rpc();
-  // });
+  it("Consumer can use water within contracted capacity", async () => {
+    let waterAmount = 100;
+    await program.methods
+      .updateTariffType(tariffKey, { uniformIbt: {} })
+      .accounts({
+        agency: wallet.publicKey
+      })
+      .rpc();
+
+    await program.methods
+      .useWater(tariffKey, reservoirKey, waterAmount)
+      .accounts({
+        consumer: consumer.publicKey,
+        wtkMint: wtkMint,
+        watcMint: watcMint,
+        agency: wallet.publicKey,
+      })
+      .signers([consumer])
+      .rpc();
+
+    const consumerWtkBalance = await connection.getTokenAccountBalance(consumerWtkAccount);
+    const consumerWatcBalance = await connection.getTokenAccountBalance(consumerWatcAccount);
+
+    assert.equal(consumerWtkBalance.value.amount, String(Math.ceil(waterAmount * initialWaterRate)));
+    assert.equal(consumerWatcBalance.value.amount, String(initialContractedCapacity-waterAmount));
+  });
 
   it("Consumer can dispose waste", async () => {
     let wasteAmount = 1000;
@@ -133,5 +147,69 @@ describe("tariffs", () => {
     const consumerWstBalance = await connection.getTokenAccountBalance(consumerWstAccount);
 
     assert.equal(consumerWstBalance.value.amount, String(Math.ceil(wasteAmount * initialWasteRate)));
+  });
+
+  describe("Tariff types for usage beyond contracted capacity", () => {
+    // Define the specific enum objects for each tariff type
+    const uniformIbt = { uniformIbt: {} };
+    const seasonalIbt = { seasonalIbt: {} };
+    const seasonalDbt = { seasonalDbt: {} };
+
+    // Define an array of tariff types with explicit names
+    const tariffTypes = [
+      { type: uniformIbt, name: "Uniform IBT" },
+      { type: seasonalIbt, name: "Seasonal IBT" },
+      { type: seasonalDbt, name: "Seasonal DBT" }
+    ];
+  
+    const usageBeyondCapacity = 1200; // Set a water usage above the contracted capacity (1000)
+  
+    tariffTypes.forEach(({ type, name }) => {
+      it(`Consumer can use water beyond contracted capacity with ${name} tariff type`, async () => {
+        // Set the tariff type
+        await program.methods
+          .updateTariffType(tariffKey, type)
+          .accounts({
+            agency: wallet.publicKey
+          })
+          .rpc();
+  
+        // Use water beyond contracted capacity
+        await program.methods
+          .useWater(tariffKey, reservoirKey, usageBeyondCapacity)
+          .accounts({
+            consumer: consumer.publicKey,
+            wtkMint: wtkMint,
+            watcMint: watcMint,
+            agency: wallet.publicKey,
+          })
+          .signers([consumer])
+          .rpc();
+  
+        // Fetch token balances
+        const consumerWtkBalance = await connection.getTokenAccountBalance(consumerWtkAccount);
+        const consumerWatcBalance = await connection.getTokenAccountBalance(consumerWatcAccount);
+  
+        // Expected token calculations based on the tariff type
+        let expectedWaterTokenCost: number;
+        const extraUsage = usageBeyondCapacity - initialContractedCapacity;
+  
+        if (name === "Uniform IBT") {
+          expectedWaterTokenCost = initialContractedCapacity * initialWaterRate + extraUsage * initialBlockRate;
+        } else if (name === "Seasonal IBT") {
+          const seasonalMultiplier = initialReservoirCapacity - initialReservoirLevel;
+          expectedWaterTokenCost = usageBeyondCapacity * (initialWaterRate + initialBlockRate * seasonalMultiplier);
+        } else if (name === "Seasonal DBT") {
+          const decreasingMultiplier = 1 - (initialReservoirLevel / initialReservoirCapacity);
+          expectedWaterTokenCost = usageBeyondCapacity * (initialWaterRate - initialBlockRate * decreasingMultiplier);
+        } else {
+          throw new Error("Unknown tariff type");
+        }
+  
+        // Assert balances
+        assert.equal(consumerWtkBalance.value.amount, String(Math.ceil(expectedWaterTokenCost)));
+        assert.equal(consumerWatcBalance.value.amount, "0"); // Contracted capacity should be fully depleted
+      });
+    });
   });
 });

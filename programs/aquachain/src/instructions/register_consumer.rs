@@ -1,6 +1,12 @@
+use crate::{
+    state::{Consumer, Reservoir, Tariff},
+    CustomError, DISCRIMINATOR,
+};
 use anchor_lang::prelude::*;
-use anchor_spl::{associated_token::AssociatedToken, token::{ self, Mint, Token, TokenAccount }};
-use crate::{ state::{ Consumer, Tariff, Reservoir }, CustomError, DISCRIMINATOR};
+use anchor_spl::{
+    associated_token::AssociatedToken,
+    token::{self, Mint, Token, TokenAccount},
+};
 
 #[derive(Accounts)]
 #[instruction(tariff_key: Pubkey, reservoir_key: Pubkey)]
@@ -15,7 +21,7 @@ pub struct RegisterConsumer<'info> {
         ],
         bump
     )]
-    pub tariff: Account<'info, Tariff>,  // Tariff assigned to this consumer
+    pub tariff: Account<'info, Tariff>, // Tariff assigned to this consumer
     #[account(
         seeds = [
             b"reservoir",
@@ -24,16 +30,16 @@ pub struct RegisterConsumer<'info> {
         ],
         bump
     )]
-    pub reservoir: Account<'info, Reservoir>,  // Reservoir assigned to this consumer
+    pub reservoir: Account<'info, Reservoir>, // Reservoir assigned to this consumer
     #[account(mut)]
     pub agency: Signer<'info>,
     #[account(mut, associated_token::mint = watc_mint,  associated_token::authority = consumer)]
-    pub consumer_watc: Account<'info, TokenAccount>,  // Consumer's WaterCapacityToken account
+    pub consumer_watc: Account<'info, TokenAccount>, // Consumer's WaterCapacityToken account
     #[account(mut, mint::authority = agency, mint::decimals = 9)]
-    pub watc_mint: Account<'info, Mint>,  // Mint for the WaterCapacityToken
+    pub watc_mint: Account<'info, Mint>, // Mint for the WaterCapacityToken
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
-    pub associated_token_program: Program<'info, AssociatedToken>
+    pub associated_token_program: Program<'info, AssociatedToken>,
 }
 
 // Register a new consumer with contracted capacity and block rate

@@ -1,6 +1,12 @@
+use crate::{
+    state::{Consumer, Tariff},
+    CustomError,
+};
 use anchor_lang::prelude::*;
-use anchor_spl::{associated_token::AssociatedToken, token::{ self, Mint, Token, TokenAccount }};
-use crate::{ CustomError, state::{Consumer, Tariff} };
+use anchor_spl::{
+    associated_token::AssociatedToken,
+    token::{self, Mint, Token, TokenAccount},
+};
 
 #[derive(Accounts)]
 #[instruction(tariff_key: Pubkey)]
@@ -13,7 +19,7 @@ pub struct DisposeWaste<'info> {
         ],
         bump
     )]
-    pub tariff: Account<'info, Tariff>,  // Tariff assigned to this consumer
+    pub tariff: Account<'info, Tariff>, // Tariff assigned to this consumer
     pub consumer: Account<'info, Consumer>, // Consumer account
     #[account(mut)]
     pub agency: Signer<'info>,
@@ -28,11 +34,7 @@ pub struct DisposeWaste<'info> {
     pub associated_token_program: Program<'info, AssociatedToken>,
 }
 
-pub fn dispose_waste(
-    ctx: Context<DisposeWaste>,
-    tariff_key: Pubkey,
-    amount: f64,
-) -> Result<()> {
+pub fn dispose_waste(ctx: Context<DisposeWaste>, tariff_key: Pubkey, amount: f64) -> Result<()> {
     let tariff = &ctx.accounts.tariff;
 
     require_keys_eq!(tariff_key, tariff.tariff_key, CustomError::Unauthorized);
@@ -55,6 +57,10 @@ pub fn dispose_waste(
         total_cost.ceil() as u64,
     )?;
 
-    msg!("Disposed {} units of waste and charged {} WasteTokens.", amount, total_cost);
+    msg!(
+        "Disposed {} units of waste and charged {} WasteTokens.",
+        amount,
+        total_cost.ceil()
+    );
     Ok(())
 }

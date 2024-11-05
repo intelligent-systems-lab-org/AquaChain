@@ -71,74 +71,7 @@ describe("tariff", () => {
         agency: wallet.publicKey,
       })
       .rpc();
-
-    // await program.methods
-    //   .registerConsumer(new anchor.BN(100), new anchor.BN(5))
-    //   .accounts({
-    //     consumer: consumer.publicKey,
-    //     agency: wallet.publicKey,
-    //     watcMint: watcMint,
-    //   })
-    //   .signers([consumer])
-    //   .rpc();
-
-    // // Fetch the consumer account to check if it's initialized correctly
-    // const consumerAccount = await program.account.consumer.fetch(
-    //   consumer.publicKey
-    // );
-
-    // // Assert that the consumer's block rate is set as expected
-    // assert.equal(consumerAccount.blockRate.toNumber(), 5);
-
-    // // Check the balance of WATC tokens in the consumer's account
-    // const consumerWatcBalance =
-    //   await provider.connection.getTokenAccountBalance(consumerWatcAccount);
-    // assert.equal(consumerWatcBalance.value.amount, "100"); // Should match contracted capacity
   });
-
-  // it("Tariff can update rates", async () => {
-  //   await program.methods
-  //     .updateRates(new anchor.BN(3), new anchor.BN(4))
-  //     .accounts({
-  //       agency: wallet.publicKey,
-  //     })
-  //     .rpc();
-
-  //   const [tariff, _] = PublicKey.findProgramAddressSync(
-  //     [Buffer.from("tariff")],
-  //     program.programId
-  //   );
-
-  //   const stateAccount = await program.account.tariff.fetch(tariff);
-
-  //   // Assert that the water and waste rates are updated as expected
-  //   assert.equal(stateAccount.waterRate.toNumber(), 3);
-  //   assert.equal(stateAccount.wasteRate.toNumber(), 4);
-  // })
-
-  // it("Consumer can use water within contracted capacity", async () => {
-  //   await program.methods
-  //     .useWater(new anchor.BN(50))
-  //     .accounts({
-  //       consumer: consumer.publicKey,
-  //       wtkMint: wtkMint,
-  //       watcMint: watcMint,
-  //       agency: wallet.publicKey,
-  //     })
-  //     .signers([consumer])
-  //     .rpc();
-  // });
-
-  // it("Consumer can dispose waste", async () => {
-  //   await program.methods
-  //     .disposeWaste(new anchor.BN(30))
-  //     .accounts({
-  //       consumer: consumer.publicKey,
-  //       wstMint: wstMint,
-  //       agency: wallet.publicKey,
-  //     })
-  //     .rpc();
-  // });
 
   it("initialization is correct", async () => {
       // Fetch the state account to check if it's initialized correctly

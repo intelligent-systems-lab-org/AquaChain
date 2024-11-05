@@ -1,5 +1,8 @@
+use crate::{
+    state::{Tariff, TariffType},
+    CustomError,
+};
 use anchor_lang::prelude::*;
-use crate::{ CustomError, state::{ Tariff, TariffType } };
 
 #[derive(Accounts)]
 #[instruction(tariff_key: Pubkey)]
@@ -16,14 +19,14 @@ pub struct UpdateTariff<'info> {
     pub tariff: Account<'info, Tariff>,
     #[account(mut)]
     pub agency: Signer<'info>,
-    pub system_program: Program<'info, System>
+    pub system_program: Program<'info, System>,
 }
 
 pub fn update_tariff_rates(
     ctx: Context<UpdateTariff>,
     tariff_key: Pubkey,
     water_rate: f64,
-    waste_rate: f64
+    waste_rate: f64,
 ) -> Result<()> {
     let tariff = &mut ctx.accounts.tariff;
 
@@ -42,7 +45,7 @@ pub fn update_tariff_rates(
 pub fn update_tariff_type(
     ctx: Context<UpdateTariff>,
     tariff_key: Pubkey,
-    tariff_type: TariffType
+    tariff_type: TariffType,
 ) -> Result<()> {
     let tariff = &mut ctx.accounts.tariff;
 

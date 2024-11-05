@@ -1,7 +1,7 @@
-mod reservoir;
 mod consumer;
+mod reservoir;
 mod tariff;
 
-pub use reservoir::*;
 pub use consumer::*;
+pub use reservoir::*;
 pub use tariff::*;

@@ -94,7 +94,14 @@ pub mod aquachain {
         instructions::update_consumer_reservoir(ctx, current_reservoir_key, new_reservoir_key)
     }
 
-    // use water
+    pub fn use_water(
+        ctx: Context<UseWater>,
+        tariff_key: Pubkey,
+        reservoir_key: Pubkey,
+        amount: f64,
+    ) -> Result<()> {
+        instructions::use_water(ctx, tariff_key, reservoir_key, amount)
+    }
 
     pub fn dispose_waste(
         ctx: Context<DisposeWaste>,

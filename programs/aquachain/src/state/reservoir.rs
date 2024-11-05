@@ -6,5 +6,5 @@ use anchor_lang::prelude::*;
 pub struct Reservoir {
     pub current_level: f64,
     pub capacity: f64,
-    pub reservoir_key: Pubkey
+    pub reservoir_key: Pubkey,
 }

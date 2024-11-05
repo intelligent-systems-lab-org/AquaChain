@@ -4,7 +4,7 @@ use anchor_lang::prelude::*;
 pub enum TariffType {
     UniformIBT,
     SeasonalIBT,
-    SeasonalDBT
+    SeasonalDBT,
 }
 
 // Tariff details
@@ -14,5 +14,5 @@ pub struct Tariff {
     pub water_rate: f64,
     pub waste_rate: f64,
     pub tariff_type: TariffType,
-    pub tariff_key: Pubkey
+    pub tariff_key: Pubkey,
 }

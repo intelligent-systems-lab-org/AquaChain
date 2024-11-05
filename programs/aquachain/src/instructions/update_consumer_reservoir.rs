@@ -1,5 +1,5 @@
+use crate::{Consumer, CustomError, Reservoir};
 use anchor_lang::prelude::*;
-use crate::{Consumer, Reservoir, CustomError };
 
 #[derive(Accounts)]
 #[instruction(current_reservoir_key: Pubkey, new_reservoir_key: Pubkey)]
@@ -26,7 +26,7 @@ pub struct UpdateConsumerReservoir<'info> {
     pub new_reservoir: Account<'info, Reservoir>, // New Reservoir to assign to this consumer
     #[account(mut)]
     pub agency: Signer<'info>,
-    pub system_program: Program<'info, System>
+    pub system_program: Program<'info, System>,
 }
 
 pub fn update_consumer_reservoir(
@@ -37,12 +37,20 @@ pub fn update_consumer_reservoir(
     let consumer = &mut ctx.accounts.consumer;
     let new_reservoir = &mut ctx.accounts.new_reservoir;
 
-    require_keys_eq!(current_reservoir_key, consumer.assigned_reservoir, CustomError::Unauthorized);
-    require_keys_eq!(new_reservoir_key, new_reservoir.reservoir_key, CustomError::Unauthorized);
-    
+    require_keys_eq!(
+        current_reservoir_key,
+        consumer.assigned_reservoir,
+        CustomError::Unauthorized
+    );
+    require_keys_eq!(
+        new_reservoir_key,
+        new_reservoir.reservoir_key,
+        CustomError::Unauthorized
+    );
+
     // Update the consumer's assigned reservoir to the new one
     consumer.assigned_reservoir = new_reservoir_key;
-    
+
     msg!("Consumer assigned to a new reservoir.");
     Ok(())
 }
