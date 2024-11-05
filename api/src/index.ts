@@ -157,6 +157,85 @@ app.get("/tariff", async (req: Request, res: Response): Promise<any> => {
   }
 });
 
+app.put("/tariff", async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { pubkey } = req.query;
+
+    // Check for valid pubkey
+    if (!pubkey) {
+      return res.status(400).json({ error: "Public key is required for updating tariff" });
+    }
+
+    let tariffKey: PublicKey;
+    try {
+      tariffKey = new PublicKey(pubkey as string);
+      const _ = await getTariffPDA(tariffKey); // Validate PDA exists
+    } catch (error) {
+      return res.status(400).json({ error: "Invalid public key" });
+    }
+
+    const { water_rate, waste_rate, tariff_type } = req.body as TariffRequest;
+
+    // Validate `water_rate` and `waste_rate` are numbers, if provided
+    if ((water_rate && typeof water_rate !== "number") || (waste_rate && typeof waste_rate !== "number")) {
+      return res.status(400).json({
+        error: "Both water_rate and waste_rate, if provided, must be numbers",
+      });
+    }
+
+    // Validate `tariff_type` if provided
+    if (tariff_type && !isValidTariffType(tariff_type)) {
+      return res.status(400).json({
+        error: "Invalid tariff_type. Expected one of: 'uniformIbt', 'seasonalIbt', 'seasonalDbt'",
+      });
+    }
+
+    // Check if any valid field was provided, if not return error
+    if (!(water_rate && waste_rate) && !tariff_type) {
+      return res.status(400).json({
+        error: "At least water_rate and waste_rate, or tariff_type must be provided",
+      });
+    }
+
+    // Execute the relevant instructions based on provided fields
+    if (water_rate || waste_rate) {
+      await program.methods
+        .updateTariffRates(
+          tariffKey,
+          new anchor.BN(water_rate),
+          new anchor.BN(waste_rate)
+        )
+        .accounts({
+          agency: wallet.publicKey,
+        })
+        .rpc();
+    }
+
+    if (tariff_type) {
+      const convertedTariffType = convertStringToTariffType(tariff_type);
+      await program.methods
+        .updateTariffType(
+          tariffKey,
+          convertedTariffType
+        )
+        .accounts({
+          agency: wallet.publicKey,
+        })
+        .rpc();
+    }
+
+    // Send a success response
+    res.status(200).json({
+      message: "Tariff updated successfully",
+      tariff_key: tariffKey.toString(),
+    });
+  } catch (error) {
+    console.error("Failed to update tariff:", error);
+    res.status(500).json({ error: "Failed to update tariff" });
+  }
+});
+
+
 app.listen(port, () => {
   console.log(`[server]: Server is running at http://localhost:${port}`);
 });
