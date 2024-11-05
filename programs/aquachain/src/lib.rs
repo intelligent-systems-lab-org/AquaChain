@@ -4,6 +4,7 @@ declare_id!("8UK2jLDiWAHWEBS234LAnrnA9q7dGivV85NXhqobntYf");
 
 mod instructions;
 pub mod state;
+mod utils;
 
 use instructions::*;
 use state::*;
@@ -15,8 +16,8 @@ pub mod aquachain {
     pub fn initialize_tariff(
         ctx: Context<InitializeTariff>,
         tariff_key: Pubkey,
-        water_rate: f64,
-        waste_rate: f64,
+        water_rate: u64,
+        waste_rate: u64,
         tariff_type: TariffType,
     ) -> Result<()> {
         instructions::initialize_tariff(ctx, tariff_key, water_rate, waste_rate, tariff_type)
@@ -25,8 +26,8 @@ pub mod aquachain {
     pub fn update_tariff_rates(
         ctx: Context<UpdateTariff>,
         tariff_key: Pubkey,
-        water_rate: f64,
-        waste_rate: f64
+        water_rate: u64,
+        waste_rate: u64
     ) -> Result<()> {
         instructions::update_tariff_rates(ctx, tariff_key, water_rate, waste_rate)
     }
@@ -42,8 +43,8 @@ pub mod aquachain {
     pub fn initialize_reservoir(
         ctx: Context<InitializeReservoir>,
         reservoir_key: Pubkey,
-        current_level: f64,
-        capacity: f64
+        current_level: u64,
+        capacity: u64
     ) -> Result<()> {
         instructions::initialize_reservoir(ctx, reservoir_key, current_level, capacity)
     }
@@ -51,8 +52,8 @@ pub mod aquachain {
     pub fn update_reservoir(
         ctx: Context<UpdateReservoir>,
         reservoir_key: Pubkey,
-        current_level: f64,
-        capacity: f64
+        current_level: u64,
+        capacity: u64
     ) -> Result<()> {
         instructions::update_reservoir(ctx, reservoir_key, current_level, capacity)
     }
@@ -62,7 +63,7 @@ pub mod aquachain {
         tariff_key: Pubkey,
         reservoir_key: Pubkey,
         contracted_capacity: u64,
-        block_rate: f64,
+        block_rate: u64,
     ) -> Result<()>
     {
         instructions::register_consumer(ctx, tariff_key, reservoir_key, contracted_capacity, block_rate)
@@ -73,7 +74,7 @@ pub mod aquachain {
         tariff_key: Pubkey,
         reservoir_key: Pubkey,
         contracted_capacity: u64,
-        block_rate: f64,
+        block_rate: u64,
     ) -> Result<()> {
         instructions::update_consumer(ctx, tariff_key, reservoir_key, contracted_capacity, block_rate)
     }
@@ -98,7 +99,7 @@ pub mod aquachain {
         ctx: Context<UseWater>,
         tariff_key: Pubkey,
         reservoir_key: Pubkey,
-        amount: f64,
+        amount: u64,
     ) -> Result<()> {
         instructions::use_water(ctx, tariff_key, reservoir_key, amount)
     }
@@ -106,7 +107,7 @@ pub mod aquachain {
     pub fn dispose_waste(
         ctx: Context<DisposeWaste>,
         tariff_key: Pubkey,
-        amount: f64,
+        amount: u64,
     ) -> Result<()> {
         instructions::dispose_waste(ctx, tariff_key, amount)
     }
