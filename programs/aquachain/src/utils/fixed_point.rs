@@ -17,6 +17,11 @@ impl FixedPoint {
     fn to_u64(&self) -> u64 {
         self.0 as u64
     }
+
+    // Static method to return "1.000" as a FixedPoint instance
+    pub fn one() -> Self {
+        FixedPoint(SCALE)
+    }
 }
 
 impl Display for FixedPoint {

@@ -22,14 +22,14 @@ describe("consumer", () => {
   let reservoirKey: PublicKey;
   let consumer: Keypair;
 
-  const initialWaterRate = 5;
-  const initialWasteRate = 2;
+  const initialWaterRate = 500; // 0.500
+  const initialWasteRate = 200; // 0.200
 
-  const initialReservoirLevel = 950000;
-  const initialReservoirCapacity = 1000000;
+  const initialReservoirLevel = 950000; // 950.000
+  const initialReservoirCapacity = 1000000; // 1000.000
 
-  const initialContractedCapacity = 100000;
-  const initialBlockRate = 8;
+  const initialContractedCapacity = 100000; // 100.000
+  const initialBlockRate = 800; // 0.800 
 
   before(async () => {
     // Initialize accounts
@@ -61,7 +61,7 @@ describe("consumer", () => {
 
     // Initialize a tariff
     await program.methods
-      .initializeTariff(tariffKey, initialWaterRate, initialWasteRate, { uniformIbt: {} })
+      .initializeTariff(tariffKey, new anchor.BN(initialWaterRate), new anchor.BN(initialWasteRate), { uniformIbt: {} })
       .accounts({
         agency: wallet.publicKey,
       })
@@ -69,14 +69,14 @@ describe("consumer", () => {
 
     // Initialize a reservoir
     await program.methods
-    .initializeReservoir(reservoirKey, initialReservoirLevel, initialReservoirCapacity)
+    .initializeReservoir(reservoirKey, new anchor.BN(initialReservoirLevel), new anchor.BN(initialReservoirCapacity))
     .accounts({
       agency: wallet.publicKey,
     })
     .rpc();
 
     await program.methods
-      .registerConsumer(tariffKey, reservoirKey, new anchor.BN(initialContractedCapacity), initialBlockRate)
+      .registerConsumer(tariffKey, reservoirKey, new anchor.BN(initialContractedCapacity), new anchor.BN(initialBlockRate))
       .accounts({
         consumer: consumer.publicKey,
         agency: wallet.publicKey,
@@ -92,7 +92,7 @@ describe("consumer", () => {
 
     // Assert that the consumer's configuration is expected
     assert.equal(consumerAccount.contractedCapacity.toNumber(), initialContractedCapacity);
-    assert.equal(consumerAccount.blockRate, initialBlockRate);
+    assert.equal(consumerAccount.blockRate.toNumber(), initialBlockRate);
 
     // Check the balance of WATC tokens in the consumer's account
     const consumerWatcBalance =
@@ -101,11 +101,11 @@ describe("consumer", () => {
   });
 
   it("should update rates on the initialized consumer", async () => {
-    let newContractedCapacity = 200000;
-    let newBlockRate = 1/1000;
+    let newContractedCapacity = 200000; // 200.000
+    let newBlockRate = 1000; // 1.000 
 
     await program.methods
-      .updateConsumer(tariffKey, reservoirKey, new anchor.BN(newContractedCapacity), newBlockRate)
+      .updateConsumer(tariffKey, reservoirKey, new anchor.BN(newContractedCapacity), new anchor.BN(newBlockRate))
       .accounts({
         consumer: consumer.publicKey,
         agency: wallet.publicKey,
@@ -117,7 +117,7 @@ describe("consumer", () => {
     // Assert that the consumer's configuration is expected
     const consumerAccount = await program.account.consumer.fetch(consumer.publicKey);
     assert.equal(consumerAccount.contractedCapacity.toNumber(), newContractedCapacity);
-    assert.equal(consumerAccount.blockRate, newBlockRate);
+    assert.equal(consumerAccount.blockRate.toNumber(), newBlockRate);
 
     // Check the balance of WATC tokens in the consumer's account
     const consumerWatcBalance =
@@ -127,8 +127,8 @@ describe("consumer", () => {
 
   it("should update consumer's assigned tariff", async () => {
     // Test values for new tariff
-    const newWaterRate = 2 / 1000;
-    const newWasteRate = 2 / 100;
+    const newWaterRate = 20; // 0.020
+    const newWasteRate = 10; // 0.010
 
     const newTariffKey = Keypair.generate().publicKey;
     const [newTariffPDA] = PublicKey.findProgramAddressSync(
@@ -137,7 +137,7 @@ describe("consumer", () => {
     );
 
     await program.methods
-      .initializeTariff(newTariffKey, newWaterRate, newWasteRate, { uniformIbt: {} })
+      .initializeTariff(newTariffKey, new anchor.BN(newWaterRate), new anchor.BN(newWasteRate), { uniformIbt: {} })
       .accounts({
         agency: wallet.publicKey,
       })
@@ -162,14 +162,14 @@ describe("consumer", () => {
     // Verify that the consumer is now affected by the new tariff rates
     const updatedTariff = await program.account.tariff.fetch(newTariffPDA);
     const consumerTariff = await program.account.tariff.fetch(consumerTariffPDA);
-    assert.equal(updatedTariff.waterRate, consumerTariff.waterRate);
-    assert.equal(updatedTariff.wasteRate, consumerTariff.wasteRate);
+    assert.equal(updatedTariff.waterRate.toNumber(), consumerTariff.waterRate.toNumber());
+    assert.equal(updatedTariff.wasteRate.toNumber(), consumerTariff.wasteRate.toNumber());
   });
 
   it("should update consumer's assigned reservoir", async () => {
     // Test values for new tariff reservoir
-    const newReservoirLevel = 800000;
-    const newReservoirCapacity = 900000;
+    const newReservoirLevel = 800000; // 800.000
+    const newReservoirCapacity = 900000; // 900.000
 
     const newReservoirKey = Keypair.generate().publicKey;
     const [newReservoirPDA] = PublicKey.findProgramAddressSync(
@@ -178,7 +178,7 @@ describe("consumer", () => {
     );
 
     await program.methods
-      .initializeReservoir(newReservoirKey, newReservoirLevel, newReservoirCapacity)
+      .initializeReservoir(newReservoirKey, new anchor.BN(newReservoirLevel), new anchor.BN(newReservoirCapacity))
       .accounts({
         agency: wallet.publicKey,
       })
@@ -203,7 +203,7 @@ describe("consumer", () => {
     // Verify that the consumer is now affected by the new reservoir rates
     const updatedReservoir = await program.account.reservoir.fetch(newReservoirPDA);
     const consumerReservoir = await program.account.reservoir.fetch(consumerReservoirPDA);
-    assert.equal(updatedReservoir.currentLevel, consumerReservoir.currentLevel);
-    assert.equal(updatedReservoir.capacity, consumerReservoir.capacity);
+    assert.equal(updatedReservoir.currentLevel.toNumber(), consumerReservoir.currentLevel.toNumber());
+    assert.equal(updatedReservoir.capacity.toNumber(), consumerReservoir.capacity.toNumber());
   });
 });

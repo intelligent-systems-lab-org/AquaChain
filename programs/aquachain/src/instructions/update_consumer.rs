@@ -47,7 +47,7 @@ pub fn update_consumer(
     tariff_key: Pubkey,
     reservoir_key: Pubkey,
     contracted_capacity: u64,
-    block_rate: f64,
+    block_rate: u64,
 ) -> Result<()> {
     let consumer = &mut ctx.accounts.consumer;
     let tariff = &ctx.accounts.tariff;
@@ -62,7 +62,7 @@ pub fn update_consumer(
 
     // Validation: Ensure capacity and rate are non-zero
     require!(contracted_capacity > 0, CustomError::InvalidCapacity);
-    require!(block_rate > 0.0, CustomError::InvalidRate);
+    require!(block_rate > 0, CustomError::InvalidRate);
 
     consumer.contracted_capacity = contracted_capacity;
     consumer.block_rate = block_rate;
