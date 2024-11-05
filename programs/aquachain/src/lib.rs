@@ -135,6 +135,15 @@ pub mod aquachain {
     pub fn pay_for_waste(ctx: Context<PayForWaste>, tariff_key: Pubkey, amount: u64) -> Result<()> {
         instructions::pay_for_waste(ctx, tariff_key, amount)
     }
+
+    pub fn initialize_tokens(
+        ctx: Context<InitializeTokens>,
+        water_token: Pubkey,
+        water_capacity_token: Pubkey,
+        waste_token: Pubkey,
+    ) -> Result<()> {
+        instructions::initialize_tokens(ctx, water_token, water_capacity_token, waste_token)
+    }
 }
 
 // Define custom errors
