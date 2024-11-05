@@ -72,12 +72,10 @@ app.post("/initialize", async (req: Request, res: Response): Promise<any> => {
       })
       .rpc();
 
-    res
-      .status(200)
-      .json({
-        message: "Initialization successful",
-        tariff: tariffPDA.toString(),
-      });
+    res.status(200).json({
+      message: "Initialization successful",
+      tariff: tariffPDA.toString(),
+    });
   } catch (error) {
     console.error("Initialization error:", error);
     res.status(500).json({ error: "Failed to initialize tariff rates" });

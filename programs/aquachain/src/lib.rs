@@ -27,7 +27,7 @@ pub mod aquachain {
         ctx: Context<UpdateTariff>,
         tariff_key: Pubkey,
         water_rate: u64,
-        waste_rate: u64
+        waste_rate: u64,
     ) -> Result<()> {
         instructions::update_tariff_rates(ctx, tariff_key, water_rate, waste_rate)
     }
@@ -35,8 +35,8 @@ pub mod aquachain {
     pub fn update_tariff_type(
         ctx: Context<UpdateTariff>,
         tariff_key: Pubkey,
-        tariff_type: TariffType
-    ) -> Result<()>  {
+        tariff_type: TariffType,
+    ) -> Result<()> {
         instructions::update_tariff_type(ctx, tariff_key, tariff_type)
     }
 
@@ -44,7 +44,7 @@ pub mod aquachain {
         ctx: Context<InitializeReservoir>,
         reservoir_key: Pubkey,
         current_level: u64,
-        capacity: u64
+        capacity: u64,
     ) -> Result<()> {
         instructions::initialize_reservoir(ctx, reservoir_key, current_level, capacity)
     }
@@ -53,7 +53,7 @@ pub mod aquachain {
         ctx: Context<UpdateReservoir>,
         reservoir_key: Pubkey,
         current_level: u64,
-        capacity: u64
+        capacity: u64,
     ) -> Result<()> {
         instructions::update_reservoir(ctx, reservoir_key, current_level, capacity)
     }
@@ -64,9 +64,14 @@ pub mod aquachain {
         reservoir_key: Pubkey,
         contracted_capacity: u64,
         block_rate: u64,
-    ) -> Result<()>
-    {
-        instructions::register_consumer(ctx, tariff_key, reservoir_key, contracted_capacity, block_rate)
+    ) -> Result<()> {
+        instructions::register_consumer(
+            ctx,
+            tariff_key,
+            reservoir_key,
+            contracted_capacity,
+            block_rate,
+        )
     }
 
     pub fn update_consumer(
@@ -76,7 +81,13 @@ pub mod aquachain {
         contracted_capacity: u64,
         block_rate: u64,
     ) -> Result<()> {
-        instructions::update_consumer(ctx, tariff_key, reservoir_key, contracted_capacity, block_rate)
+        instructions::update_consumer(
+            ctx,
+            tariff_key,
+            reservoir_key,
+            contracted_capacity,
+            block_rate,
+        )
     }
 
     pub fn update_consumer_tariff(
@@ -111,8 +122,20 @@ pub mod aquachain {
     ) -> Result<()> {
         instructions::dispose_waste(ctx, tariff_key, amount)
     }
-}
 
+    pub fn pay_for_water(
+        ctx: Context<PayForWater>,
+        tariff_key: Pubkey,
+        reservoir_key: Pubkey,
+        amount: u64,
+    ) -> Result<()> {
+        instructions::pay_for_water(ctx, tariff_key, reservoir_key, amount)
+    }
+
+    pub fn pay_for_waste(ctx: Context<PayForWaste>, tariff_key: Pubkey, amount: u64) -> Result<()> {
+        instructions::pay_for_waste(ctx, tariff_key, amount)
+    }
+}
 
 // Define custom errors
 #[error_code]
@@ -129,4 +152,6 @@ pub enum CustomError {
     InvalidAmount,
     #[msg("Unauthorized: only the owner can perform this action.")]
     Unauthorized,
+    #[msg("Overpaid: payment exceeds the necessary amount.")]
+    OverPayment
 }

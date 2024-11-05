@@ -8,7 +8,7 @@ import {
 } from "@solana/spl-token";
 import { assert } from "chai";
 
-describe("tariffs", () => {
+describe("payments", () => {
   // Configure the client to use the local cluster.
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
@@ -38,7 +38,7 @@ describe("tariffs", () => {
   const initialContractedCapacity = 100000; // 100.000
   const initialBlockRate = 800; // 0.800
 
-  beforeEach(async () => {
+  before(async () => {
     // Initialize accounts
     tariffKey = Keypair.generate().publicKey;
     reservoirKey = Keypair.generate().publicKey;
@@ -131,7 +131,7 @@ describe("tariffs", () => {
       .rpc();
   });
 
-  it("Consumer can dispose waste", async () => {
+  it("Consumer can pay for waste treatment", async () => {
     const wasteAmount = 10000; // 10.000
     await program.methods
       .disposeWaste(tariffKey, new anchor.BN(wasteAmount))
@@ -142,24 +142,28 @@ describe("tariffs", () => {
       })
       .rpc();
 
+    await program.methods
+      .payForWaste(
+        tariffKey,
+        new anchor.BN((wasteAmount * initialWasteRate) / SCALE)
+      )
+      .accounts({
+        consumer: consumer.publicKey,
+        wstMint: wstMint,
+        agency: wallet.publicKey,
+      })
+      .signers([consumer])
+      .rpc();
+
     const consumerWstBalance = await connection.getTokenAccountBalance(
       consumerWstAccount
     );
 
-    assert.equal(
-      consumerWstBalance.value.amount,
-      String((wasteAmount * initialWasteRate) / SCALE)
-    );
+    assert.equal(consumerWstBalance.value.amount, "0");
   });
 
-  it("Consumer can use water within contracted capacity", async () => {
+  it("Consumer can pay for water usage", async () => {
     const waterAmount = 100000; // 100.000
-    await program.methods
-      .updateTariffType(tariffKey, { uniformIbt: {} })
-      .accounts({
-        agency: wallet.publicKey,
-      })
-      .rpc();
 
     await program.methods
       .useWater(tariffKey, reservoirKey, new anchor.BN(waterAmount))
@@ -172,103 +176,23 @@ describe("tariffs", () => {
       .signers([consumer])
       .rpc();
 
+    await program.methods
+      .payForWater(
+        tariffKey,
+        reservoirKey,
+        new anchor.BN((waterAmount * initialWaterRate) / SCALE)
+      )
+      .accounts({
+        consumer: consumer.publicKey,
+        wtkMint: wtkMint,
+        agency: wallet.publicKey,
+      })
+      .signers([consumer])
+      .rpc();
+
     const consumerWtkBalance = await connection.getTokenAccountBalance(
       consumerWtkAccount
     );
-    const consumerWatcBalance = await connection.getTokenAccountBalance(
-      consumerWatcAccount
-    );
-
-    assert.equal(
-      consumerWtkBalance.value.amount,
-      String((waterAmount * initialWaterRate) / SCALE)
-    );
-    assert.equal(
-      consumerWatcBalance.value.amount,
-      String(initialContractedCapacity - waterAmount)
-    );
-  });
-
-  describe("Tariff types for usage beyond contracted capacity", () => {
-    // Define the specific enum objects for each tariff type
-    const uniformIbt = { uniformIbt: {} };
-    const seasonalIbt = { seasonalIbt: {} };
-    const seasonalDbt = { seasonalDbt: {} };
-
-    // Define an array of tariff types with explicit names
-    const tariffTypes = [
-      { type: uniformIbt, name: "Uniform IBT" },
-      { type: seasonalIbt, name: "Seasonal IBT" },
-      { type: seasonalDbt, name: "Seasonal DBT" },
-    ];
-
-    const usageBeyondCapacity = 120000; // Set a water usage above the contracted capacity (120.000)
-
-    tariffTypes.forEach(({ type, name }) => {
-      it(`Consumer can use water beyond contracted capacity with ${name} tariff type`, async () => {
-        // Set the tariff type
-        await program.methods
-          .updateTariffType(tariffKey, type)
-          .accounts({
-            agency: wallet.publicKey,
-          })
-          .rpc();
-
-        // Use water beyond contracted capacity
-        await program.methods
-          .useWater(tariffKey, reservoirKey, new anchor.BN(usageBeyondCapacity))
-          .accounts({
-            consumer: consumer.publicKey,
-            wtkMint: wtkMint,
-            watcMint: watcMint,
-            agency: wallet.publicKey,
-          })
-          .signers([consumer])
-          .rpc();
-
-        // Fetch token balances
-        const consumerWtkBalance = await connection.getTokenAccountBalance(
-          consumerWtkAccount
-        );
-        const consumerWatcBalance = await connection.getTokenAccountBalance(
-          consumerWatcAccount
-        );
-
-        // Expected token calculations based on the tariff type
-        let expectedWaterTokenCost: number;
-        const extraUsage = usageBeyondCapacity - initialContractedCapacity;
-        let baseCost = initialContractedCapacity * initialWaterRate;
-
-        if (name === "Uniform IBT") {
-          expectedWaterTokenCost =
-            (baseCost + extraUsage * initialBlockRate) / SCALE;
-        } else if (name === "Seasonal IBT") {
-          const seasonalMultiplier =
-            initialReservoirCapacity - initialReservoirLevel;
-          expectedWaterTokenCost =
-            (baseCost +
-              ((extraUsage * initialBlockRate) / SCALE) * seasonalMultiplier) /
-            SCALE;
-        } else if (name === "Seasonal DBT") {
-          const decreasingMultiplier =
-            2 * SCALE -
-            (initialReservoirLevel * SCALE) / initialReservoirCapacity;
-          expectedWaterTokenCost =
-            (baseCost +
-              ((extraUsage * initialBlockRate) / SCALE) *
-                decreasingMultiplier) /
-            SCALE;
-        } else {
-          throw new Error("Unknown tariff type");
-        }
-
-        // Assert balances
-        assert.equal(
-          consumerWtkBalance.value.amount,
-          String(expectedWaterTokenCost)
-        );
-        assert.equal(consumerWatcBalance.value.amount, "0"); // Contracted capacity should be fully depleted
-      });
-    });
+    assert.equal(consumerWtkBalance.value.amount, "0");
   });
 });

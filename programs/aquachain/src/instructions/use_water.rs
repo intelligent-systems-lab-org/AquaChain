@@ -61,6 +61,8 @@ pub fn use_water(
     let tariff = &ctx.accounts.tariff;
     let reservoir = &ctx.accounts.reservoir;
 
+    require!(amount > 0, CustomError::InvalidAmount);
+
     require_keys_eq!(
         tariff_key,
         consumer.assigned_tariff,
