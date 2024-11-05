@@ -2,7 +2,10 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { Aquachain } from "../target/types/aquachain";
 import { PublicKey, Keypair } from "@solana/web3.js";
-import { createMint, getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
+import {
+  createMint,
+  getOrCreateAssociatedTokenAccount,
+} from "@solana/spl-token";
 import { assert } from "chai";
 
 describe("tariff", () => {
@@ -32,7 +35,11 @@ describe("tariff", () => {
     tariffKey = Keypair.generate().publicKey;
 
     [tariffPDA] = PublicKey.findProgramAddressSync(
-      [Buffer.from("tariff"), wallet.publicKey.toBuffer(), tariffKey.toBuffer()],
+      [
+        Buffer.from("tariff"),
+        wallet.publicKey.toBuffer(),
+        tariffKey.toBuffer(),
+      ],
       program.programId
     );
     consumer = Keypair.generate();
@@ -66,7 +73,12 @@ describe("tariff", () => {
 
     // Initialize a tariff
     await program.methods
-      .initializeTariff(tariffKey, new anchor.BN(initialWaterRate), new anchor.BN(initialWasteRate), { uniformIbt: {} })
+      .initializeTariff(
+        tariffKey,
+        new anchor.BN(initialWaterRate),
+        new anchor.BN(initialWasteRate),
+        { uniformIbt: {} }
+      )
       .accounts({
         agency: wallet.publicKey,
       })
@@ -87,9 +99,13 @@ describe("tariff", () => {
     const newWasteRate = 7000; // 7.000
 
     await program.methods
-      .updateTariffRates(tariffKey, new anchor.BN(newWaterRate), new anchor.BN(newWasteRate))
+      .updateTariffRates(
+        tariffKey,
+        new anchor.BN(newWaterRate),
+        new anchor.BN(newWasteRate)
+      )
       .accounts({
-        agency: wallet.publicKey
+        agency: wallet.publicKey,
       })
       .rpc();
 
@@ -103,7 +119,7 @@ describe("tariff", () => {
     await program.methods
       .updateTariffType(tariffKey, { seasonalDbt: {} })
       .accounts({
-        agency: wallet.publicKey
+        agency: wallet.publicKey,
       })
       .rpc();
 
@@ -115,12 +131,21 @@ describe("tariff", () => {
   it("should initialize a tariff with a different ID", async () => {
     let newTariffKey = Keypair.generate().publicKey;
     const [newTariffPDA] = PublicKey.findProgramAddressSync(
-      [Buffer.from("tariff"), wallet.publicKey.toBuffer(), newTariffKey.toBuffer()],
+      [
+        Buffer.from("tariff"),
+        wallet.publicKey.toBuffer(),
+        newTariffKey.toBuffer(),
+      ],
       program.programId
     );
 
     await program.methods
-      .initializeTariff(newTariffKey, new anchor.BN(4000), new anchor.BN(5000), { seasonalIbt: {} })
+      .initializeTariff(
+        newTariffKey,
+        new anchor.BN(4000),
+        new anchor.BN(5000),
+        { seasonalIbt: {} }
+      )
       .accounts({
         agency: wallet.publicKey,
       })

@@ -1,5 +1,6 @@
 use crate::{
     state::{Consumer, Reservoir, Tariff, TariffType},
+    utils::FixedPoint,
     CustomError,
 };
 use anchor_lang::prelude::*;
@@ -54,7 +55,7 @@ pub fn use_water(
     ctx: Context<UseWater>,
     tariff_key: Pubkey,
     reservoir_key: Pubkey,
-    amount: f64,
+    amount: u64,
 ) -> Result<()> {
     let consumer = &mut ctx.accounts.consumer;
     let tariff = &ctx.accounts.tariff;
@@ -71,29 +72,26 @@ pub fn use_water(
         CustomError::Unauthorized
     );
 
-    require!(amount > 0.0, CustomError::InvalidAmount);
-
     // Apply block rate or standard rate based on the consumer's contracted capacity
-    let consumer_watc_balance = ctx.accounts.consumer_watc.amount as f64;
-    let threshold = consumer.contracted_capacity as f64;
+    let amount_fp = FixedPoint::from(amount);
+    let water_rate_fp = FixedPoint::from(tariff.water_rate);
+    let block_rate_fp = FixedPoint::from(consumer.block_rate);
+    let consumer_watc_balance = FixedPoint::from(ctx.accounts.consumer_watc.amount);
 
-    let (level, level_max) = (reservoir.current_level, reservoir.capacity);
+    let (level, level_max) = (
+        FixedPoint::from(reservoir.current_level),
+        FixedPoint::from(reservoir.capacity),
+    );
 
-    let total_cost = if consumer_watc_balance >= amount {
-        amount * tariff.water_rate
-    } else {
-        match tariff.tariff_type {
-            TariffType::UniformIBT => {
-                amount * tariff.water_rate * threshold + consumer.block_rate * (amount - threshold)
-            }
-            TariffType::SeasonalIBT => {
-                amount * (tariff.water_rate + consumer.block_rate * (level_max - level))
-            }
-            TariffType::SeasonalDBT => {
-                amount * (tariff.water_rate - consumer.block_rate * (1.0 - (level / level_max)))
-            }
-        }
-    };
+    let total_cost = calculate_total_cost(
+        consumer_watc_balance,
+        amount_fp,
+        water_rate_fp,
+        tariff.tariff_type,
+        block_rate_fp,
+        level_max,
+        level,
+    );
 
     // Mint WTK tokens to the consumer for the usage cost
     token::mint_to(
@@ -105,30 +103,153 @@ pub fn use_water(
                 mint: ctx.accounts.wtk_mint.to_account_info(),
             },
         ),
-        total_cost.ceil() as u64,
+        total_cost,
     )?;
 
     // Deduct WATC tokens
-    token::burn(
-        CpiContext::new(
-            ctx.accounts.token_program.to_account_info(),
-            token::Burn {
-                mint: ctx.accounts.watc_mint.to_account_info(),
-                from: ctx.accounts.consumer_watc.to_account_info(),
-                authority: ctx.accounts.consumer.to_account_info(),
+    if ctx.accounts.consumer_watc.amount > 0 {
+        token::burn(
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                token::Burn {
+                    mint: ctx.accounts.watc_mint.to_account_info(),
+                    from: ctx.accounts.consumer_watc.to_account_info(),
+                    authority: ctx.accounts.consumer.to_account_info(),
+                },
+            ),
+            if consumer_watc_balance >= amount_fp {
+                amount
+            } else {
+                consumer_watc_balance.into()
             },
-        ),
-        if consumer_watc_balance >= amount {
-            amount.ceil() as u64
-        } else {
-            consumer_watc_balance as u64
-        },
-    )?;
+        )?;
+    }
 
     msg!(
         "Consumer used {} units of water, charged: {}.",
-        amount.ceil(),
-        total_cost.ceil()
+        amount,
+        total_cost
     );
     Ok(())
+}
+
+fn calculate_total_cost(
+    consumer_watc_balance: FixedPoint,
+    amount_fp: FixedPoint,
+    water_rate_fp: FixedPoint,
+    tariff_type: TariffType,
+    block_rate_fp: FixedPoint,
+    level_max: FixedPoint,
+    level: FixedPoint,
+) -> u64 {
+    let total_cost: u64 = if consumer_watc_balance >= amount_fp {
+        // Simple case: standard rate
+        (amount_fp * water_rate_fp).into()
+    } else {
+        let base_cost = consumer_watc_balance * water_rate_fp;
+        let excess = amount_fp - consumer_watc_balance;
+        // Cases above contracted capacity
+        let extra_cost = match tariff_type {
+            TariffType::UniformIBT => excess * block_rate_fp,
+            TariffType::SeasonalIBT => excess * block_rate_fp * (level_max - level),
+            TariffType::SeasonalDBT => {
+                excess
+                    * block_rate_fp
+                    * (FixedPoint::one() + FixedPoint::one() - (level / level_max))
+            }
+        };
+        (base_cost + extra_cost).into()
+    };
+    total_cost
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::utils::FixedPoint;
+
+    #[test]
+    fn test_total_cost_under_cap() {
+        let consumer_watc_balance = FixedPoint::from(100000);
+        let amount_fp = FixedPoint::from(100000);
+        let water_rate_fp = FixedPoint::from(500);
+        let block_rate_fp = FixedPoint::from(800);
+        let level_max = FixedPoint::from(1000000);
+        let level = FixedPoint::from(950000);
+
+        let total_cost = calculate_total_cost(
+            consumer_watc_balance,
+            amount_fp,
+            water_rate_fp,
+            TariffType::UniformIBT,
+            block_rate_fp,
+            level_max,
+            level,
+        );
+
+        assert_eq!(total_cost, 50000);
+    }
+
+    #[test]
+    fn test_total_cost_ibt() {
+        let consumer_watc_balance = FixedPoint::from(100000);
+        let amount_fp = FixedPoint::from(120000);
+        let water_rate_fp = FixedPoint::from(500);
+        let block_rate_fp = FixedPoint::from(800);
+        let level_max = FixedPoint::from(1000000);
+        let level = FixedPoint::from(950000);
+
+        let total_cost = calculate_total_cost(
+            consumer_watc_balance,
+            amount_fp,
+            water_rate_fp,
+            TariffType::UniformIBT,
+            block_rate_fp,
+            level_max,
+            level,
+        );
+        assert_eq!(total_cost, 66000);
+    }
+
+    #[test]
+    fn test_total_cost_seasonal_ibt() {
+        let consumer_watc_balance = FixedPoint::from(100000);
+        let amount_fp = FixedPoint::from(120000);
+        let water_rate_fp = FixedPoint::from(500);
+        let block_rate_fp = FixedPoint::from(800);
+        let level_max = FixedPoint::from(1000000);
+        let level = FixedPoint::from(950000);
+
+        let total_cost = calculate_total_cost(
+            consumer_watc_balance,
+            amount_fp,
+            water_rate_fp,
+            TariffType::SeasonalIBT,
+            block_rate_fp,
+            level_max,
+            level,
+        );
+        assert_eq!(total_cost, 850000);
+    }
+
+    #[test]
+    fn test_total_cost_seasonal_dbt() {
+        let consumer_watc_balance = FixedPoint::from(100000);
+        let amount_fp = FixedPoint::from(120000);
+        let water_rate_fp = FixedPoint::from(500);
+        let block_rate_fp = FixedPoint::from(800);
+        let level_max = FixedPoint::from(1000000);
+        let level = FixedPoint::from(950000);
+
+        let total_cost = calculate_total_cost(
+            consumer_watc_balance,
+            amount_fp,
+            water_rate_fp,
+            TariffType::SeasonalDBT,
+            block_rate_fp,
+            level_max,
+            level,
+        );
+        assert_eq!(total_cost, 66800);
+    }
 }

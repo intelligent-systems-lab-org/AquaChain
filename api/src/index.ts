@@ -20,7 +20,9 @@ const walletKeypair = anchor.web3.Keypair.fromSecretKey(
 
 // Set up Anchor provider using environment configuration
 const provider = new anchor.AnchorProvider(
-  new anchor.web3.Connection(process.env.ANCHOR_PROVIDER_URL || "http://127.0.0.1:8899"),
+  new anchor.web3.Connection(
+    process.env.ANCHOR_PROVIDER_URL || "http://127.0.0.1:8899"
+  ),
   new anchor.Wallet(walletKeypair),
   { commitment: "confirmed" }
 );
@@ -56,7 +58,9 @@ app.post("/initialize", async (req: Request, res: Response): Promise<any> => {
     const { water_rate, waste_rate } = req.body;
 
     if (!water_rate || !waste_rate) {
-      return res.status(400).json({ error: "Both water_rate and waste_rate are required" });
+      return res
+        .status(400)
+        .json({ error: "Both water_rate and waste_rate are required" });
     }
 
     const tariffPDA = await getTariffPDA();
@@ -68,7 +72,12 @@ app.post("/initialize", async (req: Request, res: Response): Promise<any> => {
       })
       .rpc();
 
-    res.status(200).json({ message: "Initialization successful", tariff: tariffPDA.toString() });
+    res
+      .status(200)
+      .json({
+        message: "Initialization successful",
+        tariff: tariffPDA.toString(),
+      });
   } catch (error) {
     console.error("Initialization error:", error);
     res.status(500).json({ error: "Failed to initialize tariff rates" });
@@ -91,7 +100,6 @@ app.get("/initialize", async (req: Request, res: Response): Promise<any> => {
     res.status(500).json({ error: "Failed to fetch tariff account" });
   }
 });
-
 
 app.listen(port, () => {
   console.log(`[server]: Server is running at http://localhost:${port}`);

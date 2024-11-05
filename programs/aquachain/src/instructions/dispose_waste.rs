@@ -1,5 +1,6 @@
 use crate::{
     state::{Consumer, Tariff},
+    utils::FixedPoint,
     CustomError,
 };
 use anchor_lang::prelude::*;
@@ -34,15 +35,18 @@ pub struct DisposeWaste<'info> {
     pub associated_token_program: Program<'info, AssociatedToken>,
 }
 
-pub fn dispose_waste(ctx: Context<DisposeWaste>, tariff_key: Pubkey, amount: f64) -> Result<()> {
+pub fn dispose_waste(ctx: Context<DisposeWaste>, tariff_key: Pubkey, amount: u64) -> Result<()> {
     let tariff = &ctx.accounts.tariff;
 
     require_keys_eq!(tariff_key, tariff.tariff_key, CustomError::Unauthorized);
 
-    require!(amount > 0.0, CustomError::InvalidAmount);
+    require!(amount > 0, CustomError::InvalidAmount);
+
+    let amount_fp = FixedPoint::from(amount);
+    let waste_rate_fp = FixedPoint::from(tariff.waste_rate);
 
     // Calculate the total cost based on the waste rate
-    let total_cost = amount * tariff.waste_rate;
+    let total_cost = amount_fp * waste_rate_fp;
 
     // Mint WST tokens to the consumer's account for waste disposal
     token::mint_to(
@@ -54,13 +58,13 @@ pub fn dispose_waste(ctx: Context<DisposeWaste>, tariff_key: Pubkey, amount: f64
                 mint: ctx.accounts.wst_mint.to_account_info(),
             },
         ),
-        total_cost.ceil() as u64,
+        total_cost.into(),
     )?;
 
     msg!(
         "Disposed {} units of waste and charged {} WasteTokens.",
         amount,
-        total_cost.ceil()
+        total_cost
     );
     Ok(())
 }

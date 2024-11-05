@@ -2,7 +2,10 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { Aquachain } from "../target/types/aquachain";
 import { PublicKey, Keypair } from "@solana/web3.js";
-import { createMint, getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
+import {
+  createMint,
+  getOrCreateAssociatedTokenAccount,
+} from "@solana/spl-token";
 import { assert } from "chai";
 
 describe("tariffs", () => {
@@ -26,36 +29,64 @@ describe("tariffs", () => {
   let reservoirKey: PublicKey;
   let consumer: Keypair;
 
-  const initialWaterRate = 5;
-  const initialWasteRate = 2;
+  const SCALE = 1000;
 
-  const initialReservoirLevel = 9500;
-  const initialReservoirCapacity = 10000;
+  const initialWaterRate = 500; // 0.500
+  const initialWasteRate = 200; // 0.200
 
-  const initialContractedCapacity = 1000;
-  const initialBlockRate = 8;
+  const initialReservoirLevel = 950000; // 950.000
+  const initialReservoirCapacity = 1000000; // 1000.000
 
-  before(async () => {
+  const initialContractedCapacity = 100000; // 100.000
+  const initialBlockRate = 800; // 0.800
+
+  beforeEach(async () => {
     // Initialize accounts
     tariffKey = Keypair.generate().publicKey;
     reservoirKey = Keypair.generate().publicKey;
-  
+
     [tariffPDA] = PublicKey.findProgramAddressSync(
-      [Buffer.from("tariff"), wallet.publicKey.toBuffer(), tariffKey.toBuffer()],
+      [
+        Buffer.from("tariff"),
+        wallet.publicKey.toBuffer(),
+        tariffKey.toBuffer(),
+      ],
       program.programId
     );
 
     [reservoirPDA] = PublicKey.findProgramAddressSync(
-      [Buffer.from("reservoir"), wallet.publicKey.toBuffer(), reservoirKey.toBuffer()],
+      [
+        Buffer.from("reservoir"),
+        wallet.publicKey.toBuffer(),
+        reservoirKey.toBuffer(),
+      ],
       program.programId
     );
 
     consumer = Keypair.generate();
 
     // Initialize token mints
-    wtkMint = await createMint(connection, wallet.payer, wallet.publicKey, null, 9);
-    watcMint = await createMint(connection, wallet.payer, wallet.publicKey, null, 9);
-    wstMint = await createMint(connection, wallet.payer, wallet.publicKey, null, 9);
+    wtkMint = await createMint(
+      connection,
+      wallet.payer,
+      wallet.publicKey,
+      null,
+      9
+    );
+    watcMint = await createMint(
+      connection,
+      wallet.payer,
+      wallet.publicKey,
+      null,
+      9
+    );
+    wstMint = await createMint(
+      connection,
+      wallet.payer,
+      wallet.publicKey,
+      null,
+      9
+    );
 
     // Create token accounts
     consumerWtkAccount = await getOrCreateAssociatedTokenAccount(
@@ -81,7 +112,12 @@ describe("tariffs", () => {
 
     // Initialize a tariff
     await program.methods
-      .initializeTariff(tariffKey, initialWaterRate, initialWasteRate, { uniformIbt: {} })
+      .initializeTariff(
+        tariffKey,
+        new anchor.BN(initialWaterRate),
+        new anchor.BN(initialWasteRate),
+        { uniformIbt: {} }
+      )
       .accounts({
         agency: wallet.publicKey,
       })
@@ -89,14 +125,23 @@ describe("tariffs", () => {
 
     // Initialize a reservoir
     await program.methods
-    .initializeReservoir(reservoirKey, initialReservoirLevel, initialReservoirCapacity)
-    .accounts({
-      agency: wallet.publicKey,
-    })
-    .rpc();
+      .initializeReservoir(
+        reservoirKey,
+        new anchor.BN(initialReservoirLevel),
+        new anchor.BN(initialReservoirCapacity)
+      )
+      .accounts({
+        agency: wallet.publicKey,
+      })
+      .rpc();
 
     await program.methods
-      .registerConsumer(tariffKey, reservoirKey, new anchor.BN(initialContractedCapacity), initialBlockRate)
+      .registerConsumer(
+        tariffKey,
+        reservoirKey,
+        new anchor.BN(initialContractedCapacity),
+        new anchor.BN(initialBlockRate)
+      )
       .accounts({
         consumer: consumer.publicKey,
         agency: wallet.publicKey,
@@ -106,17 +151,38 @@ describe("tariffs", () => {
       .rpc();
   });
 
+  it("Consumer can dispose waste", async () => {
+    const wasteAmount = 10000; // 10.000
+    await program.methods
+      .disposeWaste(tariffKey, new anchor.BN(wasteAmount))
+      .accounts({
+        consumer: consumer.publicKey,
+        wstMint: wstMint,
+        agency: wallet.publicKey,
+      })
+      .rpc();
+
+    const consumerWstBalance = await connection.getTokenAccountBalance(
+      consumerWstAccount
+    );
+
+    assert.equal(
+      consumerWstBalance.value.amount,
+      String((wasteAmount * initialWasteRate) / SCALE)
+    );
+  });
+
   it("Consumer can use water within contracted capacity", async () => {
-    let waterAmount = 100;
+    const waterAmount = 100000; // 100.000
     await program.methods
       .updateTariffType(tariffKey, { uniformIbt: {} })
       .accounts({
-        agency: wallet.publicKey
+        agency: wallet.publicKey,
       })
       .rpc();
 
     await program.methods
-      .useWater(tariffKey, reservoirKey, waterAmount)
+      .useWater(tariffKey, reservoirKey, new anchor.BN(waterAmount))
       .accounts({
         consumer: consumer.publicKey,
         wtkMint: wtkMint,
@@ -126,27 +192,21 @@ describe("tariffs", () => {
       .signers([consumer])
       .rpc();
 
-    const consumerWtkBalance = await connection.getTokenAccountBalance(consumerWtkAccount);
-    const consumerWatcBalance = await connection.getTokenAccountBalance(consumerWatcAccount);
+    const consumerWtkBalance = await connection.getTokenAccountBalance(
+      consumerWtkAccount
+    );
+    const consumerWatcBalance = await connection.getTokenAccountBalance(
+      consumerWatcAccount
+    );
 
-    assert.equal(consumerWtkBalance.value.amount, String(Math.ceil(waterAmount * initialWaterRate)));
-    assert.equal(consumerWatcBalance.value.amount, String(initialContractedCapacity-waterAmount));
-  });
-
-  it("Consumer can dispose waste", async () => {
-    let wasteAmount = 1000;
-    await program.methods
-      .disposeWaste(tariffKey, wasteAmount)
-      .accounts({
-        consumer: consumer.publicKey,
-        wstMint: wstMint,
-        agency: wallet.publicKey,
-      })
-      .rpc();
-
-    const consumerWstBalance = await connection.getTokenAccountBalance(consumerWstAccount);
-
-    assert.equal(consumerWstBalance.value.amount, String(Math.ceil(wasteAmount * initialWasteRate)));
+    assert.equal(
+      consumerWtkBalance.value.amount,
+      String((waterAmount * initialWaterRate) / SCALE)
+    );
+    assert.equal(
+      consumerWatcBalance.value.amount,
+      String(initialContractedCapacity - waterAmount)
+    );
   });
 
   describe("Tariff types for usage beyond contracted capacity", () => {
@@ -159,24 +219,24 @@ describe("tariffs", () => {
     const tariffTypes = [
       { type: uniformIbt, name: "Uniform IBT" },
       { type: seasonalIbt, name: "Seasonal IBT" },
-      { type: seasonalDbt, name: "Seasonal DBT" }
+      { type: seasonalDbt, name: "Seasonal DBT" },
     ];
-  
-    const usageBeyondCapacity = 1200; // Set a water usage above the contracted capacity (1000)
-  
+
+    const usageBeyondCapacity = 120000; // Set a water usage above the contracted capacity (120.000)
+
     tariffTypes.forEach(({ type, name }) => {
       it(`Consumer can use water beyond contracted capacity with ${name} tariff type`, async () => {
         // Set the tariff type
         await program.methods
           .updateTariffType(tariffKey, type)
           .accounts({
-            agency: wallet.publicKey
+            agency: wallet.publicKey,
           })
           .rpc();
-  
+
         // Use water beyond contracted capacity
         await program.methods
-          .useWater(tariffKey, reservoirKey, usageBeyondCapacity)
+          .useWater(tariffKey, reservoirKey, new anchor.BN(usageBeyondCapacity))
           .accounts({
             consumer: consumer.publicKey,
             wtkMint: wtkMint,
@@ -185,29 +245,48 @@ describe("tariffs", () => {
           })
           .signers([consumer])
           .rpc();
-  
+
         // Fetch token balances
-        const consumerWtkBalance = await connection.getTokenAccountBalance(consumerWtkAccount);
-        const consumerWatcBalance = await connection.getTokenAccountBalance(consumerWatcAccount);
-  
+        const consumerWtkBalance = await connection.getTokenAccountBalance(
+          consumerWtkAccount
+        );
+        const consumerWatcBalance = await connection.getTokenAccountBalance(
+          consumerWatcAccount
+        );
+
         // Expected token calculations based on the tariff type
         let expectedWaterTokenCost: number;
         const extraUsage = usageBeyondCapacity - initialContractedCapacity;
-  
+        let baseCost = initialContractedCapacity * initialWaterRate;
+
         if (name === "Uniform IBT") {
-          expectedWaterTokenCost = initialContractedCapacity * initialWaterRate + extraUsage * initialBlockRate;
+          expectedWaterTokenCost =
+            (baseCost + extraUsage * initialBlockRate) / SCALE;
         } else if (name === "Seasonal IBT") {
-          const seasonalMultiplier = initialReservoirCapacity - initialReservoirLevel;
-          expectedWaterTokenCost = usageBeyondCapacity * (initialWaterRate + initialBlockRate * seasonalMultiplier);
+          const seasonalMultiplier =
+            initialReservoirCapacity - initialReservoirLevel;
+          expectedWaterTokenCost =
+            (baseCost +
+              ((extraUsage * initialBlockRate) / SCALE) * seasonalMultiplier) /
+            SCALE;
         } else if (name === "Seasonal DBT") {
-          const decreasingMultiplier = 1 - (initialReservoirLevel / initialReservoirCapacity);
-          expectedWaterTokenCost = usageBeyondCapacity * (initialWaterRate - initialBlockRate * decreasingMultiplier);
+          const decreasingMultiplier =
+            2 * SCALE -
+            (initialReservoirLevel * SCALE) / initialReservoirCapacity;
+          expectedWaterTokenCost =
+            (baseCost +
+              ((extraUsage * initialBlockRate) / SCALE) *
+                decreasingMultiplier) /
+            SCALE;
         } else {
           throw new Error("Unknown tariff type");
         }
-  
+
         // Assert balances
-        assert.equal(consumerWtkBalance.value.amount, String(Math.ceil(expectedWaterTokenCost)));
+        assert.equal(
+          consumerWtkBalance.value.amount,
+          String(expectedWaterTokenCost)
+        );
         assert.equal(consumerWatcBalance.value.amount, "0"); // Contracted capacity should be fully depleted
       });
     });

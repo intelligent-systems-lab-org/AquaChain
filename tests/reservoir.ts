@@ -24,13 +24,21 @@ describe("reservoir", () => {
     reservoirKey = Keypair.generate().publicKey;
 
     [reservoirPDA] = PublicKey.findProgramAddressSync(
-      [Buffer.from("reservoir"), wallet.publicKey.toBuffer(), reservoirKey.toBuffer()],
+      [
+        Buffer.from("reservoir"),
+        wallet.publicKey.toBuffer(),
+        reservoirKey.toBuffer(),
+      ],
       program.programId
     );
 
     // Initialize a reservoir
     await program.methods
-      .initializeReservoir(reservoirKey, new anchor.BN(initialReservoirLevel), new anchor.BN(initialReservoirCapacity))
+      .initializeReservoir(
+        reservoirKey,
+        new anchor.BN(initialReservoirLevel),
+        new anchor.BN(initialReservoirCapacity)
+      )
       .accounts({
         agency: wallet.publicKey,
       })
@@ -51,14 +59,20 @@ describe("reservoir", () => {
     const newReservoirCapacity = 950; // 0.95
 
     await program.methods
-      .updateReservoir(reservoirKey, new anchor.BN(newReservoirLevel), new anchor.BN(newReservoirCapacity))
+      .updateReservoir(
+        reservoirKey,
+        new anchor.BN(newReservoirLevel),
+        new anchor.BN(newReservoirCapacity)
+      )
       .accounts({
-        agency: wallet.publicKey
+        agency: wallet.publicKey,
       })
       .rpc();
 
     // Fetch and assert updated reservoir rates
-    const updatedReservoir = await program.account.reservoir.fetch(reservoirPDA);
+    const updatedReservoir = await program.account.reservoir.fetch(
+      reservoirPDA
+    );
     assert.equal(updatedReservoir.currentLevel.toNumber(), newReservoirLevel);
     assert.equal(updatedReservoir.capacity.toNumber(), newReservoirCapacity);
   });
@@ -66,12 +80,20 @@ describe("reservoir", () => {
   it("should initialize a reservoir with a different ID", async () => {
     let newReservoirKey = Keypair.generate().publicKey;
     const [newReservoirPDA] = PublicKey.findProgramAddressSync(
-      [Buffer.from("reservoir"), wallet.publicKey.toBuffer(), newReservoirKey.toBuffer()],
+      [
+        Buffer.from("reservoir"),
+        wallet.publicKey.toBuffer(),
+        newReservoirKey.toBuffer(),
+      ],
       program.programId
     );
 
     await program.methods
-      .initializeReservoir(newReservoirKey, new anchor.BN(400), new anchor.BN(500))
+      .initializeReservoir(
+        newReservoirKey,
+        new anchor.BN(400),
+        new anchor.BN(500)
+      )
       .accounts({
         agency: wallet.publicKey,
       })
@@ -82,6 +104,9 @@ describe("reservoir", () => {
 
     assert.equal(newReservoir.currentLevel.toNumber(), 400);
     assert.equal(newReservoir.capacity.toNumber(), 500);
-    assert.equal(newReservoir.reservoirKey.toBase58(), newReservoirKey.toBase58());
+    assert.equal(
+      newReservoir.reservoirKey.toBase58(),
+      newReservoirKey.toBase58()
+    );
   });
 });
