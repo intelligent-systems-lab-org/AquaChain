@@ -5,7 +5,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-aquachain = "8UK2jLDiWAHWEBS234LAnrnA9q7dGivV85NXhqobntYf"
+aquachain = "62BMhEVwxxV1RQjd9rxgyhW8ebvyxiDfRDbZRxERw8yC"
 
 [registry]
 url = "https://api.apr.dev"
