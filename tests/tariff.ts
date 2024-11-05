@@ -30,7 +30,7 @@ describe("tariff", () => {
   before(async () => {
     // Initialize accounts
     tariffKey = Keypair.generate().publicKey;
-  
+
     [tariffPDA] = PublicKey.findProgramAddressSync(
       [Buffer.from("tariff"), wallet.publicKey.toBuffer(), tariffKey.toBuffer()],
       program.programId
@@ -74,12 +74,12 @@ describe("tariff", () => {
   });
 
   it("initialization is correct", async () => {
-      // Fetch the state account to check if it's initialized correctly
-      const stateAccount = await program.account.tariff.fetch(tariffPDA);
+    // Fetch the state account to check if it's initialized correctly
+    const stateAccount = await program.account.tariff.fetch(tariffPDA);
 
-      // Assert that the water and waste rates are set as expected
-      assert.equal(stateAccount.waterRate.toNumber(), initialWaterRate);
-      assert.equal(stateAccount.wasteRate.toNumber(), initialWasteRate);
+    // Assert that the water and waste rates are set as expected
+    assert.equal(stateAccount.waterRate.toNumber(), initialWaterRate);
+    assert.equal(stateAccount.wasteRate.toNumber(), initialWasteRate);
   });
 
   it("should update rates on the initialized tariff", async () => {

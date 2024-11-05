@@ -22,8 +22,8 @@ pub struct UpdateReservoir<'info> {
 pub fn update_reservoir(
     ctx: Context<UpdateReservoir>,
     reservoir_key: Pubkey,
-    current_level: f64,
-    capacity: f64,
+    current_level: u64,
+    capacity: u64,
 ) -> Result<()> {
     let reservoir = &mut ctx.accounts.reservoir;
 
@@ -34,10 +34,10 @@ pub fn update_reservoir(
     );
 
     require!(
-        current_level > 0.0 && current_level <= capacity,
+        current_level > 0 && current_level <= capacity,
         CustomError::InvalidReservoirLevel
     );
-    require!(capacity > 0.0, CustomError::InvalidReservoirCapacity);
+    require!(capacity > 0, CustomError::InvalidReservoirCapacity);
 
     reservoir.current_level = current_level;
     reservoir.capacity = capacity;

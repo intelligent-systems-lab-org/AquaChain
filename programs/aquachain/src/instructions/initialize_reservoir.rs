@@ -25,13 +25,13 @@ pub struct InitializeReservoir<'info> {
 pub fn initialize_reservoir(
     ctx: Context<InitializeReservoir>,
     reservoir_key: Pubkey,
-    current_level: f64,
-    capacity: f64
+    current_level: u64,
+    capacity: u64
 ) -> Result<()> {
     let reservoir = &mut ctx.accounts.reservoir;
 
-    require!(current_level > 0.0 && current_level <= capacity, CustomError::InvalidReservoirLevel);
-    require!(capacity > 0.0, CustomError::InvalidReservoirCapacity);
+    require!(current_level > 0 && current_level <= capacity, CustomError::InvalidReservoirLevel);
+    require!(capacity > 0, CustomError::InvalidReservoirCapacity);
 
     reservoir.reservoir_key = reservoir_key;
     reservoir.current_level = current_level;

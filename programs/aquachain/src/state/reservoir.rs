@@ -4,7 +4,7 @@ use anchor_lang::prelude::*;
 #[account]
 #[derive(InitSpace)]
 pub struct Reservoir {
-    pub current_level: f64,
-    pub capacity: f64,
+    pub current_level: u64,
+    pub capacity: u64,
     pub reservoir_key: Pubkey,
 }
