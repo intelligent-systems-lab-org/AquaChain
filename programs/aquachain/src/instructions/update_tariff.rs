@@ -25,15 +25,15 @@ pub struct UpdateTariff<'info> {
 pub fn update_tariff_rates(
     ctx: Context<UpdateTariff>,
     tariff_key: Pubkey,
-    water_rate: f64,
-    waste_rate: f64,
+    water_rate: u64,
+    waste_rate: u64,
 ) -> Result<()> {
     let tariff = &mut ctx.accounts.tariff;
 
     require_keys_eq!(tariff_key, tariff.tariff_key, CustomError::Unauthorized);
 
-    require!(water_rate > 0.0, CustomError::InvalidRate);
-    require!(waste_rate > 0.0, CustomError::InvalidRate);
+    require!(water_rate > 0, CustomError::InvalidRate);
+    require!(waste_rate > 0, CustomError::InvalidRate);
 
     tariff.water_rate = water_rate;
     tariff.waste_rate = waste_rate;

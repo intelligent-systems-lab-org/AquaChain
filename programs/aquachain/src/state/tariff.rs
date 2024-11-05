@@ -11,8 +11,8 @@ pub enum TariffType {
 #[account]
 #[derive(InitSpace)]
 pub struct Tariff {
-    pub water_rate: f64,
-    pub waste_rate: f64,
+    pub water_rate: u64,
+    pub waste_rate: u64,
     pub tariff_type: TariffType,
     pub tariff_key: Pubkey,
 }

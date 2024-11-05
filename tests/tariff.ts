@@ -24,8 +24,8 @@ describe("tariff", () => {
   let tariffKey: PublicKey;
   let consumer: Keypair;
 
-  const initialWaterRate = 2.0;
-  const initialWasteRate = 3.0;
+  const initialWaterRate = 2000; // 2.000
+  const initialWasteRate = 3000; // 3.000
 
   before(async () => {
     // Initialize accounts
@@ -66,7 +66,7 @@ describe("tariff", () => {
 
     // Initialize a tariff
     await program.methods
-      .initializeTariff(tariffKey, initialWaterRate, initialWasteRate, { uniformIbt: {} })
+      .initializeTariff(tariffKey, new anchor.BN(initialWaterRate), new anchor.BN(initialWasteRate), { uniformIbt: {} })
       .accounts({
         agency: wallet.publicKey,
       })
@@ -78,16 +78,16 @@ describe("tariff", () => {
       const stateAccount = await program.account.tariff.fetch(tariffPDA);
 
       // Assert that the water and waste rates are set as expected
-      assert.equal(stateAccount.waterRate, 2);
-      assert.equal(stateAccount.wasteRate, 3);
+      assert.equal(stateAccount.waterRate.toNumber(), initialWaterRate);
+      assert.equal(stateAccount.wasteRate.toNumber(), initialWasteRate);
   });
 
   it("should update rates on the initialized tariff", async () => {
-    const newWaterRate = 6.0;
-    const newWasteRate = 7.0;
+    const newWaterRate = 6000; // 6.000
+    const newWasteRate = 7000; // 7.000
 
     await program.methods
-      .updateTariffRates(tariffKey, newWaterRate, newWasteRate)
+      .updateTariffRates(tariffKey, new anchor.BN(newWaterRate), new anchor.BN(newWasteRate))
       .accounts({
         agency: wallet.publicKey
       })
@@ -95,8 +95,8 @@ describe("tariff", () => {
 
     // Fetch and assert updated tariff rates
     const updatedTariff = await program.account.tariff.fetch(tariffPDA);
-    assert.equal(updatedTariff.waterRate, newWaterRate);
-    assert.equal(updatedTariff.wasteRate, newWasteRate);
+    assert.equal(updatedTariff.waterRate.toNumber(), newWaterRate);
+    assert.equal(updatedTariff.wasteRate.toNumber(), newWasteRate);
   });
 
   it("should update tariff type on the initialized tariff", async () => {
@@ -120,7 +120,7 @@ describe("tariff", () => {
     );
 
     await program.methods
-      .initializeTariff(newTariffKey, 4.0, 5.0, { seasonalIbt: {} })
+      .initializeTariff(newTariffKey, new anchor.BN(4000), new anchor.BN(5000), { seasonalIbt: {} })
       .accounts({
         agency: wallet.publicKey,
       })
@@ -128,8 +128,8 @@ describe("tariff", () => {
 
     // Fetch and assert the newly created tariff
     const newTariff = await program.account.tariff.fetch(newTariffPDA);
-    assert.equal(newTariff.waterRate, 4.0);
-    assert.equal(newTariff.wasteRate, 5.0);
+    assert.equal(newTariff.waterRate.toNumber(), 4000);
+    assert.equal(newTariff.wasteRate.toNumber(), 5000);
     assert.deepEqual(newTariff.tariffType, { seasonalIbt: {} });
     assert.equal(newTariff.tariffKey.toBase58(), newTariffKey.toBase58());
   });

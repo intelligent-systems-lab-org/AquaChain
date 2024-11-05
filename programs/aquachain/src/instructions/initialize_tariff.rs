@@ -25,14 +25,14 @@ pub struct InitializeTariff<'info> {
 pub fn initialize_tariff(
     ctx: Context<InitializeTariff>,
     tariff_key: Pubkey,
-    water_rate: f64,
-    waste_rate: f64,
+    water_rate: u64,
+    waste_rate: u64,
     tariff_type: TariffType
 ) -> Result<()> {
     let tariff = &mut ctx.accounts.tariff;
 
-    require!(water_rate > 0.0, CustomError::InvalidRate);
-    require!(waste_rate > 0.0, CustomError::InvalidRate);
+    require!(water_rate > 0, CustomError::InvalidRate);
+    require!(waste_rate > 0, CustomError::InvalidRate);
 
     tariff.tariff_key = tariff_key;
     tariff.water_rate = water_rate;
