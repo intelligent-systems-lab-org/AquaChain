@@ -51,7 +51,7 @@ const createNewMint = async (): Promise<PublicKey> => {
 // Function to initialize or fetch tokens and return mint addresses
 const InitOrFetchTokens = async (): Promise<TokenAccounts> => {
   const tokensPDA = PublicKey.findProgramAddressSync(
-    [Buffer.from(TOKEN_SEED)],
+    [Buffer.from(TOKEN_SEED), wallet.publicKey.toBuffer()],
     program.programId
   );
 

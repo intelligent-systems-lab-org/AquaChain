@@ -344,4 +344,191 @@ consumerRouter.put(
   }
 );
 
+// POST endpoint to dispose waste
+consumerRouter.post(
+  "/:pubkey/waste/charge",
+  authorizeWallet,
+  async (req: Request, res: Response): Promise<any> => {
+    try {
+      const { pubkey } = req.params;
+      const { amount } = req.body;
+
+      if (!amount) {
+        return res.status(400).json({ error: "amount is required for update" });
+      }
+
+      const consumerKey = new PublicKey(pubkey);
+
+      // Fetch the consumer's current account data
+      const consumerAccount = await program.account.consumer.fetch(consumerKey);
+      if (!consumerAccount) {
+        return res.status(404).json({ error: "Consumer not found" });
+      }
+
+      // Call the disposeWaste instruction to dispose waste
+      await program.methods
+        .disposeWaste(consumerAccount.assignedTariff, new anchor.BN(amount))
+        .accounts({
+          consumer: consumerKey,
+          wstMint: req.tokens!.WST,
+          agency: wallet.publicKey,
+        })
+        .rpc();
+
+      res.status(200).json({
+        message: "Waste disposed successfully",
+        consumer: consumerKey.toString(),
+        amount: amount,
+      });
+    } catch (error) {
+      console.error("Error disposing waste:", error);
+      res.status(500).json({ error: "Failed to dispose waste" });
+    }
+  }
+);
+
+// POST endpoint to charge for water usage
+consumerRouter.post(
+    "/:pubkey/waster/charge",
+    authorizeWallet,
+    authorizeConsumerKeypair,
+    async (req: Request, res: Response): Promise<any> => {
+      try {
+        const { pubkey } = req.params;
+        const { amount } = req.body;
+
+        if (!amount) {
+          return res.status(400).json({ error: "amount is required for update" });
+        }
+
+        const consumerKey = new PublicKey(pubkey);
+
+        // Fetch the consumer's current account data
+        const consumerAccount = await program.account.consumer.fetch(consumerKey);
+        if (!consumerAccount) {
+          return res.status(404).json({ error: "Consumer not found" });
+        }
+
+        // Call the useWater instruction to charge for water usage
+        await program.methods
+          .useWater(
+            consumerAccount.assignedTariff,
+            consumerAccount.assignedReservoir,
+            new anchor.BN(amount)
+          )
+          .accounts({
+            consumer: consumerKey,
+            wtkMint: req.tokens!.WTK,
+            watcMint: req.tokens!.WATC,
+            agency: wallet.publicKey,
+          })
+          .signers([req.consumerKeypair!])
+          .rpc();
+
+        res.status(200).json({
+          message: "Water usage charged successfully",
+          consumer: consumerKey.toString(),
+          amount: amount,
+        });
+      } catch (error) {
+        console.error("Error charging for water usage:", error);
+        res.status(500).json({ error: "Failed to charge for water usage" });
+      }
+    }
+)
+
+// POST endpoint to pay for waste treatment
+consumerRouter.post(
+    "/:pubkey/waste/pay",
+    authorizeWallet,
+    authorizeConsumerKeypair,
+    async (req: Request, res: Response): Promise<any> => {
+      try {
+        const { pubkey } = req.params;
+        const { amount } = req.body;
+  
+        if (!amount) {
+          return res.status(400).json({ error: "amount is required for update" });
+        }
+  
+        const consumerKey = new PublicKey(pubkey);
+  
+        // Fetch the consumer's current account data
+        const consumerAccount = await program.account.consumer.fetch(consumerKey);
+        if (!consumerAccount) {
+          return res.status(404).json({ error: "Consumer not found" });
+        }
+  
+        // Call the payForWaste instruction to pay for waste treatment
+        await program.methods
+          .payForWaste(consumerAccount.assignedTariff, new anchor.BN(amount))
+          .accounts({
+            consumer: consumerKey,
+            wstMint: req.tokens!.WST,
+            agency: wallet.publicKey,
+          })
+          .signers([req.consumerKeypair!])
+          .rpc();
+  
+        res.status(200).json({
+          message: "Waste treatment paid successfully",
+          consumer: consumerKey.toString(),
+          amount: amount,
+        });
+      } catch (error) {
+        console.error("Error paying for waste treatment:", error);
+        res.status(500).json({ error: "Failed to pay for waste treatment" });
+      }
+    }
+);
+
+// POST endpoint to pay for water
+consumerRouter.post(
+  "/:pubkey/water/pay",
+  authorizeWallet,
+  authorizeConsumerKeypair,
+  async (req: Request, res: Response): Promise<any> => {
+    try {
+      const { pubkey } = req.params;
+      const { amount } = req.body;
+
+      if (!amount) {
+        return res.status(400).json({ error: "amount is required for update" });
+      }
+
+      const consumerKey = new PublicKey(pubkey);
+
+      // Fetch the consumer's current account data
+      const consumerAccount = await program.account.consumer.fetch(consumerKey);
+      if (!consumerAccount) {
+        return res.status(404).json({ error: "Consumer not found" });
+      }
+
+      // Call the payForWater instruction to pay for water
+      await program.methods
+        .payForWater(
+          consumerAccount.assignedTariff,
+          consumerAccount.assignedReservoir,
+          new anchor.BN(amount)
+        )
+        .accounts({
+          consumer: consumerKey,
+          wtkMint: req.tokens!.WTK,
+          agency: wallet.publicKey,
+        })
+        .signers([req.consumerKeypair!])
+        .rpc();
+
+      res.status(200).json({
+        message: "Water paid successfully",
+        consumer: consumerKey.toString(),
+        amount: amount,
+      });
+    } catch (error) {
+      console.error("Error paying for water:", error);
+      res.status(500).json({ error: "Failed to pay for water" });
+    }
+  }
+);
+
 export { consumerRouter };
