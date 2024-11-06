@@ -1,11 +1,8 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { Aquachain } from "../target/types/aquachain";
-import { PublicKey, Keypair } from "@solana/web3.js";
-import {
-  createMint,
-  getOrCreateAssociatedTokenAccount,
-} from "@solana/spl-token";
+import { PublicKey } from "@solana/web3.js";
+import { createMint } from "@solana/spl-token";
 import { assert } from "chai";
 
 describe("tokens", () => {
@@ -47,23 +44,19 @@ describe("tokens", () => {
 
     // Register tokens
     await program.methods
-      .initializeTokens(
-        wtkMint,
-        watcMint,
-        wstMint,
-      )
+      .initializeTokens(wtkMint, watcMint, wstMint)
       .accounts({
-        authority: wallet.publicKey
+        authority: wallet.publicKey,
       })
       .rpc();
   });
 
   it("Tokens are recorded", async () => {
     const [tokensPDA] = PublicKey.findProgramAddressSync(
-        [Buffer.from("tokens"), wallet.publicKey.toBuffer()],
-        program.programId
-      );
-      
+      [Buffer.from("tokens"), wallet.publicKey.toBuffer()],
+      program.programId
+    );
+
     const tokens = await program.account.tokens.fetch(tokensPDA);
 
     assert.equal(tokens.wtk.toString(), wtkMint.toString());

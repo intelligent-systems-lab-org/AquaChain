@@ -3,6 +3,7 @@ import * as anchor from "@coral-xyz/anchor";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import { wallet, program, getPDA } from "../services/solana";
 import { ReservoirRequest } from "../types/reservoir";
+import { authorizeWallet } from "../services/middleware";
 
 const reservoirRouter = require("express").Router();
 
@@ -28,7 +29,7 @@ const fetchReservoir = async (reservoirPDA: PublicKey) => {
 };
 
 // POST endpoint to initialize reservoir
-reservoirRouter.post("/", async (req: Request, res: Response): Promise<any> => {
+reservoirRouter.post("/", authorizeWallet, async (req: Request, res: Response): Promise<any> => {
   try {
     const { currentLevel, capacity } = req.body as ReservoirRequest;
 
@@ -65,12 +66,34 @@ reservoirRouter.post("/", async (req: Request, res: Response): Promise<any> => {
   }
 });
 
-// GET endpoint to retrieve a specific reservoir by pubkey or list all reservoirs
+// GET endpoint to list all reservoirs
 reservoirRouter.get("/", async (req: Request, res: Response): Promise<any> => {
   try {
-    const { pubkey } = req.query;
+    // List all reservoirs by iterating through all accounts
+    const reservoirs = await program.account.reservoir.all();
 
-    if (pubkey) {
+    const reservoirList = reservoirs.map((reservoir) => {
+      return {
+        reservoirKey: reservoir.account.reservoirKey.toString(),
+        currentLevel: reservoir.account.currentLevel.toNumber(),
+        capacity: reservoir.account.capacity.toNumber(),
+      };
+    });
+
+    return res.status(200).json(reservoirList);
+  } catch (error) {
+    console.error("Failed to retrieve reservoirs:", error);
+    res.status(500).json({ error: "Failed to retrieve reservoirs" });
+  }
+});
+
+// GET endpoint to retrieve a specific reservoir by pubkey
+reservoirRouter.get(
+  "/:pubkey",
+  async (req: Request, res: Response): Promise<any> => {
+    try {
+      const { pubkey } = req.params;
+
       // Retrieve a specific reservoir by its public key
       const reservoirPDA = await getReservoirPDA(
         new PublicKey(pubkey as string)
@@ -82,91 +105,75 @@ reservoirRouter.get("/", async (req: Request, res: Response): Promise<any> => {
       }
 
       return res.status(200).json(reservoirData);
-    } else {
-      // List all reservoirs by iterating through all accounts
-      const reservoirs = await program.account.reservoir.all();
-
-      const reservoirList = reservoirs.map((reservoir) => {
-        return {
-          reservoirKey: reservoir.account.reservoirKey.toString(),
-          currentLevel: reservoir.account.currentLevel.toNumber(),
-          capacity: reservoir.account.capacity.toNumber(),
-        };
-      });
-
-      return res.status(200).json(reservoirList);
-    }
-  } catch (error) {
-    console.error("Failed to retrieve reservoirs:", error);
-    res.status(500).json({ error: "Failed to retrieve reservoirs" });
-  }
-});
-
-reservoirRouter.put("/", async (req: Request, res: Response): Promise<any> => {
-  try {
-    const { pubkey } = req.query;
-
-    // Check for valid pubkey
-    if (!pubkey) {
-      return res
-        .status(400)
-        .json({ error: "Public key is required for updating reservoir" });
-    }
-
-    let reservoirKey: PublicKey;
-    try {
-      reservoirKey = new PublicKey(pubkey as string);
-      const _ = await getReservoirPDA(reservoirKey); // Validate PDA exists
     } catch (error) {
-      return res.status(400).json({ error: "Invalid public key" });
+      console.error("Failed to retrieve reservoirs:", error);
+      res.status(500).json({ error: "Failed to retrieve reservoirs" });
     }
-
-    let { currentLevel, capacity } = req.body as ReservoirRequest;
-
-    // If `currentLevel` is not provided or not a number, exit
-    if (!currentLevel || typeof currentLevel !== "number") {
-      return res.status(400).json({
-        error: "Current level of reservoir is required and must be a number",
-      });
-    }
-
-    // If `capacity` is not provided, do not change the capacity
-    if (!capacity) {
-      const reservoirPDA = await getReservoirPDA(reservoirKey)
-      const reservoirAccount = await program.account.reservoir.fetch(
-        reservoirPDA
-      );
-      capacity = reservoirAccount.capacity.toNumber();
-    }
-
-    // If `capacity` is not a number, exit
-    if (typeof capacity !== "number") {
-      return res.status(400).json({
-        error: "Capacity of reservoir must be a number",
-      });
-    }
-
-    // Execute the relevant instructions based on provided fields
-    await program.methods
-      .updateReservoir(
-        reservoirKey,
-        new anchor.BN(currentLevel),
-        new anchor.BN(capacity)
-      )
-      .accounts({
-        agency: wallet.publicKey,
-      })
-      .rpc();
-
-    // Send a success response
-    res.status(200).json({
-      message: "Reservoir updated successfully",
-      reservoir_key: reservoirKey.toString(),
-    });
-  } catch (error) {
-    console.error("Failed to update reservoir:", error);
-    res.status(500).json({ error: "Failed to update reservoir" });
   }
-});
+);
 
-module.exports = reservoirRouter;
+reservoirRouter.put(
+  "/:pubkey",
+  authorizeWallet,
+  async (req: Request, res: Response): Promise<any> => {
+    try {
+      const { pubkey } = req.params;
+
+      let reservoirKey: PublicKey;
+      try {
+        reservoirKey = new PublicKey(pubkey);
+        const _ = await getReservoirPDA(reservoirKey); // Validate PDA exists
+      } catch (error) {
+        return res.status(400).json({ error: "Invalid public key" });
+      }
+
+      let { currentLevel, capacity } = req.body as ReservoirRequest;
+
+      // If `currentLevel` is not provided or not a number, exit
+      if (!currentLevel || typeof currentLevel !== "number") {
+        return res.status(400).json({
+          error: "Current level of reservoir is required and must be a number",
+        });
+      }
+
+      // If `capacity` is not provided, do not change the capacity
+      if (!capacity) {
+        const reservoirPDA = await getReservoirPDA(reservoirKey);
+        const reservoirAccount = await program.account.reservoir.fetch(
+          reservoirPDA
+        );
+        capacity = reservoirAccount.capacity.toNumber();
+      }
+
+      // If `capacity` is not a number, exit
+      if (typeof capacity !== "number") {
+        return res.status(400).json({
+          error: "Capacity of reservoir must be a number",
+        });
+      }
+
+      // Execute the relevant instructions based on provided fields
+      await program.methods
+        .updateReservoir(
+          reservoirKey,
+          new anchor.BN(currentLevel),
+          new anchor.BN(capacity)
+        )
+        .accounts({
+          agency: wallet.publicKey,
+        })
+        .rpc();
+
+      // Send a success response
+      res.status(200).json({
+        message: "Reservoir updated successfully",
+        reservoir_key: reservoirKey.toString(),
+      });
+    } catch (error) {
+      console.error("Failed to update reservoir:", error);
+      res.status(500).json({ error: "Failed to update reservoir" });
+    }
+  }
+);
+
+export { reservoirRouter, getReservoirPDA, fetchReservoir };
