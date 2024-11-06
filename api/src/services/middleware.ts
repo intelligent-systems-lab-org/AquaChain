@@ -25,16 +25,15 @@ const tokensPromise = InitOrFetchTokens()
 // Authorization middleware to check if the provided key matches the wallet's keypair
 const authorizeWallet = (req: Request, res: Response, next: Function) => {
   const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
 
-  if (!token) {
+  if (!authHeader) {
     return res.status(403).json({ error: "Authorization token is required" });
   }
 
   try {
     // Parse the provided keypair from the token and verify
     const providedKeypair = anchor.web3.Keypair.fromSecretKey(
-      Uint8Array.from(JSON.parse(token))
+      Uint8Array.from(JSON.parse(authHeader))
     );
 
     // Check if the provided keypair matches the wallet keypair
@@ -75,9 +74,8 @@ const authorizeConsumerKeypair = (
   const authHeader = (req.headers as Record<string, string>)[
     "consumer-authorization"
   ];
-  const consumerToken = authHeader && authHeader.split(" ")[1];
 
-  if (!consumerToken) {
+  if (!authHeader) {
     return res
       .status(403)
       .json({ error: "Consumer authorization token is required" });
@@ -86,7 +84,7 @@ const authorizeConsumerKeypair = (
   try {
     // Parse the consumer's private key from the token and validate
     const consumerKeypair = anchor.web3.Keypair.fromSecretKey(
-      Uint8Array.from(JSON.parse(consumerToken))
+      Uint8Array.from(JSON.parse(authHeader))
     );
 
     // Attach the consumer keypair to the request for use in signing

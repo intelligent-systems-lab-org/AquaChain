@@ -29,42 +29,46 @@ const fetchReservoir = async (reservoirPDA: PublicKey) => {
 };
 
 // POST endpoint to initialize reservoir
-reservoirRouter.post("/", authorizeWallet, async (req: Request, res: Response): Promise<any> => {
-  try {
-    const { currentLevel, capacity } = req.body as ReservoirRequest;
+reservoirRouter.post(
+  "/",
+  authorizeWallet,
+  async (req: Request, res: Response): Promise<any> => {
+    try {
+      const { currentLevel, capacity } = req.body as ReservoirRequest;
 
-    // Validate request body
-    if (typeof currentLevel !== "number" || typeof capacity !== "number") {
-      return res.status(400).json({
-        error:
-          "Both current level and capacity of reservoir are required and must be numbers",
+      // Validate request body
+      if (typeof currentLevel !== "number" || typeof capacity !== "number") {
+        return res.status(400).json({
+          error:
+            "Both current level and capacity of reservoir are required and must be numbers",
+        });
+      }
+
+      const reservoirKey = Keypair.generate().publicKey;
+      const reservoirPDA = await getReservoirPDA(reservoirKey);
+
+      await program.methods
+        .initializeReservoir(
+          reservoirKey,
+          new anchor.BN(currentLevel),
+          new anchor.BN(capacity)
+        )
+        .accounts({
+          agency: wallet.publicKey,
+        })
+        .rpc();
+
+      res.status(200).json({
+        message: "Initialization successful",
+        reservoir: reservoirPDA.toString(),
+        reservoir_key: reservoirKey.toString(),
       });
+    } catch (error) {
+      console.error("Initialization error:", error);
+      res.status(500).json({ error: "Failed to create reservoir" });
     }
-
-    const reservoirKey = Keypair.generate().publicKey;
-    const reservoirPDA = await getReservoirPDA(reservoirKey);
-
-    await program.methods
-      .initializeReservoir(
-        reservoirKey,
-        new anchor.BN(currentLevel),
-        new anchor.BN(capacity)
-      )
-      .accounts({
-        agency: wallet.publicKey,
-      })
-      .rpc();
-
-    res.status(200).json({
-      message: "Initialization successful",
-      reservoir: reservoirPDA.toString(),
-      reservoir_key: reservoirKey.toString(),
-    });
-  } catch (error) {
-    console.error("Initialization error:", error);
-    res.status(500).json({ error: "Failed to create reservoir" });
   }
-});
+);
 
 // GET endpoint to list all reservoirs
 reservoirRouter.get("/", async (req: Request, res: Response): Promise<any> => {
@@ -74,7 +78,7 @@ reservoirRouter.get("/", async (req: Request, res: Response): Promise<any> => {
 
     const reservoirList = reservoirs.map((reservoir) => {
       return {
-        reservoirKey: reservoir.account.reservoirKey.toString(),
+        reservoir_key: reservoir.account.reservoirKey.toString(),
         currentLevel: reservoir.account.currentLevel.toNumber(),
         capacity: reservoir.account.capacity.toNumber(),
       };

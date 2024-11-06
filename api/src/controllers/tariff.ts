@@ -34,57 +34,61 @@ const fetchTariff = async (tariffPDA: PublicKey) => {
 };
 
 // POST endpoint to initialize tariff
-tariffRouter.post("/", authorizeWallet, async (req: Request, res: Response): Promise<any> => {
-  try {
-    const { water_rate, waste_rate, tariff_type } = req.body as TariffRequest;
+tariffRouter.post(
+  "/",
+  authorizeWallet,
+  async (req: Request, res: Response): Promise<any> => {
+    try {
+      const { water_rate, waste_rate, tariff_type } = req.body as TariffRequest;
 
-    // Validate that `water_rate` and `waste_rate` are numbers
-    if (typeof water_rate !== "number" || typeof waste_rate !== "number") {
-      return res.status(400).json({
-        error:
-          "Both water_rate and waste_rate are required and must be numbers",
+      // Validate that `water_rate` and `waste_rate` are numbers
+      if (typeof water_rate !== "number" || typeof waste_rate !== "number") {
+        return res.status(400).json({
+          error:
+            "Both water_rate and waste_rate are required and must be numbers",
+        });
+      }
+
+      // Validate that `tariff_type` is a valid string
+      const defaultType: TariffTypeString = "uniformIbt";
+      const chosenTariffType = tariff_type ? tariff_type : defaultType;
+
+      if (!isValidTariffType(chosenTariffType)) {
+        return res.status(400).json({
+          error:
+            "Invalid tariff_type. Expected one of: 'uniformIbt', 'seasonalIbt', 'seasonalDbt'",
+        });
+      }
+
+      // Convert string to required TariffType object format
+      const convertedTariffType = convertStringToTariffType(chosenTariffType);
+
+      const tariffKey = Keypair.generate().publicKey;
+      const tariffPDA = await getTariffPDA(tariffKey);
+
+      await program.methods
+        .initializeTariff(
+          tariffKey,
+          new anchor.BN(water_rate),
+          new anchor.BN(waste_rate),
+          convertedTariffType
+        )
+        .accounts({
+          agency: wallet.publicKey,
+        })
+        .rpc();
+
+      res.status(200).json({
+        message: "Initialization successful",
+        tariff: tariffPDA.toString(),
+        tariff_key: tariffKey.toString(),
       });
+    } catch (error) {
+      console.error("Initialization error:", error);
+      res.status(500).json({ error: "Failed to create tariff" });
     }
-
-    // Validate that `tariff_type` is a valid string
-    const defaultType: TariffTypeString = "uniformIbt";
-    const chosenTariffType = tariff_type ? tariff_type : defaultType;
-
-    if (!isValidTariffType(chosenTariffType)) {
-      return res.status(400).json({
-        error:
-          "Invalid tariff_type. Expected one of: 'uniformIbt', 'seasonalIbt', 'seasonalDbt'",
-      });
-    }
-
-    // Convert string to required TariffType object format
-    const convertedTariffType = convertStringToTariffType(chosenTariffType);
-
-    const tariffKey = Keypair.generate().publicKey;
-    const tariffPDA = await getTariffPDA(tariffKey);
-
-    await program.methods
-      .initializeTariff(
-        tariffKey,
-        new anchor.BN(water_rate),
-        new anchor.BN(waste_rate),
-        convertedTariffType
-      )
-      .accounts({
-        agency: wallet.publicKey,
-      })
-      .rpc();
-
-    res.status(200).json({
-      message: "Initialization successful",
-      tariff: tariffPDA.toString(),
-      tariff_key: tariffKey.toString(),
-    });
-  } catch (error) {
-    console.error("Initialization error:", error);
-    res.status(500).json({ error: "Failed to create tariff" });
   }
-});
+);
 
 // GET endpoint to list all tariffs
 tariffRouter.get("/", async (req: Request, res: Response): Promise<any> => {

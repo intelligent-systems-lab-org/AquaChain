@@ -5,9 +5,4 @@ interface ConsumerRequest {
   block_rate: number;
 }
 
-interface KeyChangeRequest {
-  current_key: string;
-  new_key: string;
-}
-
-export { ConsumerRequest, KeyChangeRequest };
+export { ConsumerRequest };
