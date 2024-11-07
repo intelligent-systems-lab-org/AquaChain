@@ -1,5 +1,5 @@
 interface ReservoirRequest {
-  currentLevel: number;
+  current_level: number;
   capacity: number;
 }
 

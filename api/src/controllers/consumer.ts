@@ -389,7 +389,7 @@ consumerRouter.post(
 
 // POST endpoint to charge for water usage
 consumerRouter.post(
-    "/:pubkey/waster/charge",
+    "/:pubkey/water/charge",
     authorizeWallet,
     authorizeConsumerKeypair,
     async (req: Request, res: Response): Promise<any> => {

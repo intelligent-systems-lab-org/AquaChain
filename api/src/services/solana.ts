@@ -103,7 +103,6 @@ const initializeOrFetchATAs = async (
         mint,
         consumer
       );
-      console.log(`Consumer ${key} token account fetched from server.`);
       accounts[key] = tokenAccount.address;
     } catch (error) {
       console.error(`Error initializing ${key} token account:`, error);

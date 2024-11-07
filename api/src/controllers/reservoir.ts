@@ -34,13 +34,13 @@ reservoirRouter.post(
   authorizeWallet,
   async (req: Request, res: Response): Promise<any> => {
     try {
-      const { currentLevel, capacity } = req.body as ReservoirRequest;
+      const { current_level, capacity } = req.body as ReservoirRequest;
 
       // Validate request body
-      if (typeof currentLevel !== "number" || typeof capacity !== "number") {
+      if (typeof current_level !== "number" || typeof capacity !== "number") {
         return res.status(400).json({
           error:
-            "Both current level and capacity of reservoir are required and must be numbers",
+            "Both `current_level` and `capacity` of reservoir are required and must be numbers",
         });
       }
 
@@ -50,7 +50,7 @@ reservoirRouter.post(
       await program.methods
         .initializeReservoir(
           reservoirKey,
-          new anchor.BN(currentLevel),
+          new anchor.BN(current_level),
           new anchor.BN(capacity)
         )
         .accounts({
@@ -131,10 +131,10 @@ reservoirRouter.put(
         return res.status(400).json({ error: "Invalid public key" });
       }
 
-      let { currentLevel, capacity } = req.body as ReservoirRequest;
+      let { current_level, capacity } = req.body as ReservoirRequest;
 
       // If `currentLevel` is not provided or not a number, exit
-      if (!currentLevel || typeof currentLevel !== "number") {
+      if (!current_level || typeof current_level !== "number") {
         return res.status(400).json({
           error: "Current level of reservoir is required and must be a number",
         });
@@ -160,7 +160,7 @@ reservoirRouter.put(
       await program.methods
         .updateReservoir(
           reservoirKey,
-          new anchor.BN(currentLevel),
+          new anchor.BN(current_level),
           new anchor.BN(capacity)
         )
         .accounts({
