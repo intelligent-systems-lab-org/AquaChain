@@ -2,8 +2,33 @@
 
 -----
 
-<div align="center"> 
-<table style="border-collapse: collapse; text-align: center;"> <tr> <td style="padding: 10px;"> <img src="https://solana.com/src/img/branding/solanaLogoMark.png" alt="Solana" style="width:px; height:48px;"><br> <b>Solana</b> </td> <td style="padding: 10px;"> <img src="https://vectorified.com/images/rust-icon-15.png" alt="Rust" style="width:48px; height:48px;"><br> <b>Rust</b> </td> <td style="padding: 10px;"> <img src="https://img.icons8.com/color/48/typescript.png" alt="TypeScript" style="width:48px; height:48px;"><br> <b>TypeScript</b> </td> <td style="padding: 10px;"> <img src="https://nodejs.org/static/logos/jsIconGreen.svg" alt="Express.js" style="width:48px; height:48px;"><br> <b>Express.js</b> </td> <td style="padding: 10px;"> <img src="https://www.anchor-lang.com/_next/image?url=%2Flogo.png&w=48&q=100" alt="Anchor" style="width:48px; height:48px;"><br> <b>Anchor</b> </td> </tr> </table> </div>
+<div align="center">
+  <table style="border-collapse: collapse; border: none; text-align: center;">
+    <tr>
+      <td style="padding: 10px; text-align: center;">
+        <img src="https://solana.com/src/img/branding/solanaLogoMark.png" alt="Solana" style="width:48px; height:48px;"><br>
+        <b>Solana</b>
+      </td>
+      <td style="padding: 10px; text-align: center;">
+        <img src="https://vectorified.com/images/rust-icon-15.png" alt="Rust" style="width:48px; height:48px;"><br>
+        <b>Rust</b>
+      </td>
+      <td style="padding: 10px; text-align: center;">
+        <img src="https://img.icons8.com/color/48/typescript.png" alt="TypeScript" style="width:48px; height:48px;"><br>
+        <b>TypeScript</b>
+      </td>
+      <td style="padding: 10px; text-align: center;">
+        <img src="https://nodejs.org/static/logos/jsIconGreen.svg" alt="Express.js" style="width:48px; height:48px;"><br>
+        <b>Express.js</b>
+      </td>
+      <td style="padding: 10px; text-align: center;">
+        <img src="https://www.anchor-lang.com/_next/image?url=%2Flogo.png&w=48&q=100" alt="Anchor" style="width:48px; height:48px;"><br>
+        <b>Anchor</b>
+      </td>
+    </tr>
+  </table>
+</div>
+
 
 <p align = "center">
 <b>A smart-contract based system for industrial water & waste resource management.</b>
