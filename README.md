@@ -1,4 +1,24 @@
-# AquaChain
+![Aquachain Logo](Aquachain.png)
+
+-----
+
+<p align = "center">
+<b>A smart-contract based system for industrial water & waste resource management.</b>
+</p>
+
+-----
+
+<p align="center">
+  <a href="https://solana.com/">
+    <img src="https://img.shields.io/badge/BLockchain-Solana-purple.svg?logo=solana&style=for-the-badge" alt="Solana">
+  </a>
+  <img src="https://img.shields.io/github/repo-size/intelligent-systems-lab-org/Aquachain?style=for-the-badge&color=green&logo=github" alt="Repo size">
+  <a href="https://github.com/intelligent-systems-lab-org/Aquachain/issues">
+    <img src="https://img.shields.io/github/issues/intelligent-systems-lab-org/Aquachain?style=for-the-badge&logo=github" alt="GitHub issues">
+  </a>
+  <img src="https://img.shields.io/github/last-commit/intelligent-systems-lab-org/Aquachain/main?style=for-the-badge&logo=github"
+  alt="GitHub last development commit">
+</p>
 
 ## Tokens
 
