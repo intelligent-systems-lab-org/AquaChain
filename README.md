@@ -2,6 +2,9 @@
 
 -----
 
+<div align="center"> 
+<table style="border-collapse: collapse; text-align: center;"> <tr> <td style="padding: 10px;"> <img src="https://solana.com/src/img/branding/solanaLogoMark.png" alt="Solana" style="width:px; height:48px;"><br> <b>Solana</b> </td> <td style="padding: 10px;"> <img src="https://vectorified.com/images/rust-icon-15.png" alt="Rust" style="width:48px; height:48px;"><br> <b>Rust</b> </td> <td style="padding: 10px;"> <img src="https://img.icons8.com/color/48/typescript.png" alt="TypeScript" style="width:48px; height:48px;"><br> <b>TypeScript</b> </td> <td style="padding: 10px;"> <img src="https://nodejs.org/static/logos/jsIconGreen.svg" alt="Express.js" style="width:48px; height:48px;"><br> <b>Express.js</b> </td> <td style="padding: 10px;"> <img src="https://www.anchor-lang.com/_next/image?url=%2Flogo.png&w=48&q=100" alt="Anchor" style="width:48px; height:48px;"><br> <b>Anchor</b> </td> </tr> </table> </div>
+
 <p align = "center">
 <b>A smart-contract based system for industrial water & waste resource management.</b>
 </p>
@@ -9,9 +12,6 @@
 -----
 
 <p align="center">
-  <a href="https://solana.com/">
-    <img src="https://img.shields.io/badge/BLockchain-Solana-purple.svg?logo=solana&style=for-the-badge" alt="Solana">
-  </a>
   <img src="https://img.shields.io/github/repo-size/intelligent-systems-lab-org/Aquachain?style=for-the-badge&color=green&logo=github" alt="Repo size">
   <a href="https://github.com/intelligent-systems-lab-org/Aquachain/issues">
     <img src="https://img.shields.io/github/issues/intelligent-systems-lab-org/Aquachain?style=for-the-badge&logo=github" alt="GitHub issues">
@@ -20,15 +20,19 @@
   alt="GitHub last development commit">
 </p>
 
+## Introduction
+
+> [!NOTE]  
+> This section is a work in progress.
+
 ## Tokens
 
-| Token | Symbol | Description | Block Data
-|---|---|---|---|
-| WaterToken | WTK | Transacted every cubic meter of water usage to the consumer. | <ul><li>[Devnet](https://explorer.solana.com/address/DNVaLEjKvXXVitRqSsECzxSUi7ASDzmteTn5WeCqxoPE?cluster=devnet)</li><li>Mainnet</li></ul> |
-| WaterCapacityToken | WATC | Represents the contracted water capacity a consumer has at the start of the billing cycle. | <ul><li>[Devnet](https://explorer.solana.com/address/FV2Exaqv4p9j4qkrSFffybqXsWWUgZkBeN4UiRSrnhWc?cluster=devnet)</li><li>Mainnet</li></ul> |
-| WasteToken | WST | Transacted every cubic meter of waste to be treated. | <ul><li>[Devnet](https://explorer.solana.com/address/6Z5ENchymACuNgXpVr3XLRDK2bQexj3RPpcJCN6Cpbfs?cluster=devnet)</li><li>Mainnet</li></ul> |
-| WasteCapacityToken | WSTC | Represents the amount of allowable waste. | <ul><li>[Devnet](https://explorer.solana.com/address/AkQWseWZxey8PHisBVQrmn1xQJzT3E12xEobNc9vnS59?cluster=devnet)</li><li>Mainnet</li></ul> |
-| ReservoirCapacityToken | RCT | The total water capacity within the reservoir. | <ul><li>[Devnet](https://explorer.solana.com/address/Hvik5e4dKiznG2cS1sfqqy1g4ivYGrcny6ra4k1hFQqX?cluster=devnet)</li><li>Mainnet</li></ul> |
+| Token | Symbol | Description |
+|---|---|---|
+| WaterToken | WTK | Transacted every cubic meter of water usage to the consumer. |
+| WaterCapacityToken | WATC | Represents the contracted water capacity a consumer has at the start of the billing cycle. |
+| WasteToken | WST | Transacted every cubic meter of waste to be treated. |
+| ReservoirCapacityToken | RCT | The total water capacity within the reservoir. |
 
 ## Smart Contracts
 
@@ -47,7 +51,7 @@ Justification: The nations within the Caribbean are impacted by the dry and rain
 
 Rules: 	
 - **WaterToken:** A water token that is transacted every $X \ m^3$ to the consumer. There is a flat rate at the start and then block rate increases as the reservoir capacity decreases during the dry season.
-- **WaterCapacityToken:** The amount that the consumer is contracted at the start. Once the contracted amount is completed the consumer is then charged per **WaterToken\*(1- ReservoirCapacityToken%)** where for lower reservoir capacity the water rates increase in block.
+- **WaterCapacityToken:** The amount that the consumer is contracted at the start. Once the contracted amount is completed the consumer is then charged based on the difference between the maximum reservoir capacity and the current reservoir capacity (i.e., `chargedRate = blockRate * (maxCapacity - currentCapacity`). This means lower reservoir capacities increase the water rates in block.
 - **WasteToken:** The consumer is transacted a waste token every $X \ m^3$ to be treated.
 - **ReservoirCapacityToken:** The total water capacity within the reservoir.
 
@@ -56,15 +60,6 @@ Justification: The nations within the Caribbean are impacted by the dry and rain
 
 Rules: 	
 - **WaterToken:** A water token that is transacted every $X \ m^3$ to the consumer. There is a flat rate at the start which is determined based on the WaterCapacity contracted amount. Higher contracted Water Capacity selected results in higher contracted rate per $X \ m^3$.
-- **WaterCapacityToken:** The amount that the consumer is contracted at the start. If the WaterToken usage is less than the WaterToken 
+- **WaterCapacityToken:** The amount that the consumer is contracted at the start. Once the contracted amount is completed the consumer is then charged based on the the maximum and current reservoir capacity such that reservoir capacities exceeding the maximum capacity decrease the water rates in block (i.e., `chargedRate = blockRate * (2 - (currentCapacity / maxCapacity)`). 
 - **WasteToken:** The consumer is transacted a waste token every $X\ m^3$ to be treated.
 - **ReservoirCapacityToken:** The total water capacity within the reservoir.
-
-### SC4: Geographic Tariff (Increasing block rate)
-Justification: Various sources of ground and surface water are used to supply various regions. If the resource being extracted from the user is severely depleted, conservation measures must be taken once the initial contracted amount is agreed.
-
-Rules: 	
-- **WaterToken:** A water token that is transacted every $X \ m^3$ to the consumer. There is a flat rate at the start and then block rate increases as the reservoir capacity decreases.
-- **WaterCapacityToken:** The amount that the consumer is contracted at the start. Once the contracted amount is completed the consumer is then charged per **WaterToken\*(1- ReservoirCapacityToken%)** where for lower reservoir capacity the water rates increase in block. In this case consumers can purchase Water Tokens from other users.  
-- **WasteToken:** The consumer is transacted a waste token every $X \ m^3$ to be treated.
-- **ReservoirCapacityToken:** The water capacity within reservoir T.
