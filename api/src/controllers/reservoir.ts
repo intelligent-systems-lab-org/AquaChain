@@ -7,6 +7,47 @@ import { authorizeWallet } from "../services/middleware";
 
 const reservoirRouter = require("express").Router();
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Reservoir:
+ *       type: object
+ *       properties:
+ *         reservoir_key:
+ *           type: string
+ *           description: Public key of the reservoir
+ *         current_level:
+ *           type: integer
+ *           description: Current level of the reservoir
+ *           minimum: 0
+ *         capacity:
+ *           type: integer
+ *           description: Capacity of the reservoir
+ *           minimum: 0
+ *       required:
+ *         - reservoir_key
+ *         - current_level
+ *         - capacity
+ *     ReservoirRequest:
+ *       type: object
+ *       properties:
+ *         current_level:
+ *           type: integer
+ *           description: Current level of the reservoir
+ *         capacity:
+ *           type: integer
+ *           description: Capacity of the reservoir
+ *       required:
+ *         - current_level
+ *         - capacity
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: apiKey
+ *       name: Authorization
+ *       in: header
+ */
+
 // Utility to derive the PDA
 const getReservoirPDA = async (key: PublicKey): Promise<PublicKey> =>
   getPDA("reservoir", key);
@@ -28,7 +69,59 @@ const fetchReservoir = async (reservoirPDA: PublicKey) => {
   }
 };
 
-// POST endpoint to initialize reservoir
+
+/**
+ * @swagger
+ * /reservoir:
+ *  post:
+ *   summary: Initialize a new reservoir
+ *   tags: [Reservoirs]
+ *   security:
+ *     - bearerAuth: []
+ *   requestBody:
+ *     required: true
+ *     content:
+ *       application/json:
+ *         schema:
+ *           $ref: '#/components/schemas/ReservoirRequest'
+ *   responses:
+ *     200:
+ *       description: Reservoir initialized successfully
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               message:
+ *                 type: string
+ *               reservoir:
+ *                 type: string
+ *                 description: Public key of the created reservoir PDA
+ *               reservoir_key:
+ *                 type: string
+ *     400:
+ *       description: Invalid input data
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               error:
+ *                 type: string
+ *                 description: Error message
+ *                 example: "Both `current_level` and `capacity` of reservoir are required and must be numbers"
+ *     500:
+ *       description: Internal server error
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               error:
+ *                 type: string
+ *                 description: Error message
+ *                 example: Failed to create reservoir
+ */
 reservoirRouter.post(
   "/",
   authorizeWallet,
@@ -70,7 +163,34 @@ reservoirRouter.post(
   }
 );
 
-// GET endpoint to list all reservoirs
+
+/**
+ * @swagger
+ * /reservoir:
+ *   get:
+ *     summary: Retrieve a list of all reservoirs
+ *     tags: [Reservoirs]
+ *     responses:
+ *       200:
+ *         description: A list of reservoirs
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Reservoir'
+ *       500:
+ *         description: Failed to retrieve reservoirs
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   description: Error message
+ *                   example: Failed to retrieve reservoirs
+ */
 reservoirRouter.get("/", async (req: Request, res: Response): Promise<any> => {
   try {
     // List all reservoirs by iterating through all accounts
@@ -91,7 +211,50 @@ reservoirRouter.get("/", async (req: Request, res: Response): Promise<any> => {
   }
 });
 
-// GET endpoint to retrieve a specific reservoir by pubkey
+
+/**
+ * @swagger
+ * /reservoir/{pubkey}:
+ *   get:
+ *     summary: Retrieve a specific reservoir by public key
+ *     tags: [Reservoirs]
+ *     parameters:
+ *       - in: path
+ *         name: pubkey
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Public key of the reservoir PDA
+ *     responses:
+ *       200:
+ *         description: A specific reservoir object
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Reservoir'
+ *       404:
+ *         description: Reservoir not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   description: Error message
+ *                   example: Reservoir not found
+ *       500:
+ *         description: Failed to retrieve reservoir
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   description: Error message
+ *                   example: Failed to retrieve reservoir
+ */
 reservoirRouter.get(
   "/:pubkey",
   async (req: Request, res: Response): Promise<any> => {
@@ -116,6 +279,64 @@ reservoirRouter.get(
   }
 );
 
+
+/**
+ * @swagger
+ * /reservoir/{pubkey}:
+ *   put:
+ *     summary: Update an existing reservoir by public key
+ *     tags: [Reservoirs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: pubkey
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Public key of the reservoir PDA
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ReservoirRequest'
+ *     responses:
+ *       200:
+ *         description: Reservoir updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Reservoir updated successfully
+ *                 reservoir_key:
+ *                   type: string
+ *       400:
+ *         description: Invalid input data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   description: Error message
+ *                   example: "Current level of reservoir is required and must be a number"
+ *       500:
+ *         description: Failed to update reservoir
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   description: Error message
+ *                   example: Failed to update reservoir
+ */
 reservoirRouter.put(
   "/:pubkey",
   authorizeWallet,

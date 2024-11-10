@@ -91,6 +91,7 @@ const fetchTariff = async (tariffPDA: PublicKey) => {
   }
 };
 
+
 /**
  * @swagger
  * /tariff:
@@ -204,6 +205,7 @@ tariffRouter.post(
   }
 );
 
+
 /**
  * @swagger
  * /tariff:
@@ -246,6 +248,7 @@ tariffRouter.get("/", async (req: Request, res: Response): Promise<any> => {
     res.status(500).json({ error: "Failed to retrieve tariffs" });
   }
 });
+
 
 /**
  * @swagger
@@ -309,6 +312,7 @@ tariffRouter.get(
     }
   }
 );
+
 
 /**
  * @swagger
