@@ -13,6 +13,48 @@ import { authorizeWallet } from "../services/middleware";
 
 const tariffRouter = require("express").Router();
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Tariff:
+ *       type: object
+ *       properties:
+ *         tariff_key:
+ *           type: string
+ *           description: Public key of the tariff
+ *         water_rate:
+ *           type: integer
+ *           description: Rate for water usage
+ *         waste_rate:
+ *           type: integer
+ *           description: Rate for waste treatment
+ *         tariff_type:
+ *           type: string
+ *           description: Type of tariff (e.g., uniformIbt, seasonalIbt, seasonalDbt)
+ *       required:
+ *         - tariff_key
+ *         - water_rate
+ *         - waste_rate
+ *         - tariff_type
+ *     TariffRequest:
+ *       type: object
+ *       properties:
+ *         water_rate:
+ *           type: integer
+ *           description: Rate for water usage
+ *         waste_rate:
+ *           type: integer
+ *           description: Rate for waste treatment
+ *         tariff_type:
+ *           type: string
+ *           description: Type of tariff (e.g., uniformIbt, seasonalIbt, seasonalDbt)
+ *       required:
+ *         - water_rate
+ *         - waste_rate
+ *         - tariff_type
+ */
+
 // Utility to derive the tariff PDA
 const getTariffPDA = async (key: PublicKey): Promise<PublicKey> =>
   getPDA("tariff", key);
@@ -33,7 +75,38 @@ const fetchTariff = async (tariffPDA: PublicKey) => {
   }
 };
 
-// POST endpoint to initialize tariff
+/**
+ * @swagger
+ * /tariff:
+ *   post:
+ *     summary: Initialize a new tariff
+ *     tags: [Tariffs]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/TariffRequest'
+ *     responses:
+ *       200:
+ *         description: Tariff initialized successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 tariff:
+ *                   type: string
+ *                   description: Public key of the created tariff PDA
+ *                 tariff_key:
+ *                   type: string
+ *       400:
+ *         description: Invalid input data
+ *       500:
+ *         description: Internal server error
+ */
 tariffRouter.post(
   "/",
   authorizeWallet,
@@ -90,7 +163,24 @@ tariffRouter.post(
   }
 );
 
-// GET endpoint to list all tariffs
+/**
+ * @swagger
+ * /tariff:
+ *   get:
+ *     summary: Retrieve a list of all tariffs
+ *     tags: [Tariffs]
+ *     responses:
+ *       200:
+ *         description: A list of tariffs
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Tariff'
+ *       500:
+ *         description: Failed to retrieve tariffs
+ */
 tariffRouter.get("/", async (req: Request, res: Response): Promise<any> => {
   try {
     const tariffs = await program.account.tariff.all();
@@ -108,7 +198,31 @@ tariffRouter.get("/", async (req: Request, res: Response): Promise<any> => {
   }
 });
 
-// GET endpoint to retrieve a specific tariff by pubkey
+/**
+ * @swagger
+ * /tariff/{pubkey}:
+ *   get:
+ *     summary: Retrieve a specific tariff by public key
+ *     tags: [Tariffs]
+ *     parameters:
+ *       - in: path
+ *         name: pubkey
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Public key of the tariff PDA
+ *     responses:
+ *       200:
+ *         description: A specific tariff object
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Tariff'
+ *       404:
+ *         description: Tariff not found
+ *       500:
+ *         description: Failed to retrieve tariff
+ */
 tariffRouter.get(
   "/:pubkey",
   async (req: Request, res: Response): Promise<any> => {
@@ -129,6 +243,43 @@ tariffRouter.get(
   }
 );
 
+/**
+ * @swagger
+ * /tariff/{pubkey}:
+ *   put:
+ *     summary: Update an existing tariff by public key
+ *     tags: [Tariffs]
+ *     parameters:
+ *       - in: path
+ *         name: pubkey
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Public key of the tariff PDA
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/TariffRequest'
+ *     responses:
+ *       200:
+ *         description: Tariff updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Tariff updated successfully
+ *                 tariff_key:
+ *                   type: string
+ *       400:
+ *         description: Invalid input data
+ *       500:
+ *         description: Failed to update tariff
+ */
 tariffRouter.put(
   "/:pubkey",
   authorizeWallet,
