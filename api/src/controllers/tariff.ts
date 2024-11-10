@@ -26,12 +26,19 @@ const tariffRouter = require("express").Router();
  *         water_rate:
  *           type: integer
  *           description: Rate for water usage
+ *           minimum: 0
  *         waste_rate:
  *           type: integer
  *           description: Rate for waste treatment
+ *           minimum: 0
  *         tariff_type:
  *           type: string
- *           description: Type of tariff (e.g., uniformIbt, seasonalIbt, seasonalDbt)
+ *           enum: [uniformIbt, seasonalIbt, seasonalDbt]
+ *           description: >
+ *             Type of tariff
+ *             * `uniformIbt` - Uniform Increasing Block Tariff
+ *             * `seasonalIbt` - Seasonal Increasing Block Tariff
+ *             * `seasonalDbt` - Seasonal Decreasing Block Tariff
  *       required:
  *         - tariff_key
  *         - water_rate
@@ -48,11 +55,20 @@ const tariffRouter = require("express").Router();
  *           description: Rate for waste treatment
  *         tariff_type:
  *           type: string
- *           description: Type of tariff (e.g., uniformIbt, seasonalIbt, seasonalDbt)
+ *           enum: [uniformIbt, seasonalIbt, seasonalDbt]
+ *           description: >
+ *             Type of tariff
+ *             * `uniformIbt` - Uniform Increasing Block Tariff
+ *             * `seasonalIbt` - Seasonal Increasing Block Tariff
+ *             * `seasonalDbt` - Seasonal Decreasing Block Tariff
  *       required:
  *         - water_rate
  *         - waste_rate
- *         - tariff_type
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: apiKey
+ *       name: Authorization
+ *       in: header
  */
 
 // Utility to derive the tariff PDA
@@ -81,6 +97,8 @@ const fetchTariff = async (tariffPDA: PublicKey) => {
  *   post:
  *     summary: Initialize a new tariff
  *     tags: [Tariffs]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -104,8 +122,32 @@ const fetchTariff = async (tariffPDA: PublicKey) => {
  *                   type: string
  *       400:
  *         description: Invalid input data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   description: Error message
+ *             examples:
+ *              invalidOrMissingNumbers:
+ *                value:
+ *                  error: "Both water_rate and waste_rate are required and must be numbers"
+ *              invalidTariffType:
+ *                value:
+ *                  error: "Invalid tariff_type. Expected one of: 'uniformIbt', 'seasonalIbt', 'seasonalDbt'"
  *       500:
  *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   description: Error message
+ *                   example: "Failed to create tariff"
  */
 tariffRouter.post(
   "/",
@@ -157,7 +199,6 @@ tariffRouter.post(
         tariff_key: tariffKey.toString(),
       });
     } catch (error) {
-      console.error("Initialization error:", error);
       res.status(500).json({ error: "Failed to create tariff" });
     }
   }
@@ -180,6 +221,15 @@ tariffRouter.post(
  *                 $ref: '#/components/schemas/Tariff'
  *       500:
  *         description: Failed to retrieve tariffs
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   description: Error message
+ *                   example: Failed to retrieve tariffs
  */
 tariffRouter.get("/", async (req: Request, res: Response): Promise<any> => {
   try {
@@ -193,7 +243,6 @@ tariffRouter.get("/", async (req: Request, res: Response): Promise<any> => {
 
     return res.status(200).json(tariffList);
   } catch (error) {
-    console.error("Failed to retrieve tariffs:", error);
     res.status(500).json({ error: "Failed to retrieve tariffs" });
   }
 });
@@ -220,8 +269,26 @@ tariffRouter.get("/", async (req: Request, res: Response): Promise<any> => {
  *               $ref: '#/components/schemas/Tariff'
  *       404:
  *         description: Tariff not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   description: Error message
+ *                   example: Tariff not found
  *       500:
  *         description: Failed to retrieve tariff
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   description: Error message
+ *                   example: Failed to retrieve tariff
  */
 tariffRouter.get(
   "/:pubkey",
@@ -249,6 +316,8 @@ tariffRouter.get(
  *   put:
  *     summary: Update an existing tariff by public key
  *     tags: [Tariffs]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: pubkey
@@ -277,8 +346,32 @@ tariffRouter.get(
  *                   type: string
  *       400:
  *         description: Invalid input data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   description: Error message
+ *             examples:
+ *              invalidOrMissingNumbers:
+ *                value:
+ *                  error: "Both water_rate and waste_rate are required and must be numbers"
+ *              invalidTariffType:
+ *                value:
+ *                  error: "Invalid tariff_type. Expected one of: 'uniformIbt', 'seasonalIbt', 'seasonalDbt'"
  *       500:
  *         description: Failed to update tariff
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   description: Error message
+ *                   example: Failed to update tariff
  */
 tariffRouter.put(
   "/:pubkey",

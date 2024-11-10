@@ -17,6 +17,7 @@ app.use("/reservoir", reservoirRouter);
 app.use("/consumer", consumerRouter);
 
 const options = {
+  failOnErrors: true,
   definition: {
     openapi: '3.0.0',
     info: {

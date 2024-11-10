@@ -2,6 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import { Request, Response } from "express";
 import { wallet, InitOrFetchTokens } from "../services/solana";
 import { TokenAccounts } from "../types/tokens";
+import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 
 declare module "express-serve-static-core" {
   interface Request {
@@ -24,16 +25,19 @@ const tokensPromise = InitOrFetchTokens()
 
 // Authorization middleware to check if the provided key matches the wallet's keypair
 const authorizeWallet = (req: Request, res: Response, next: Function) => {
-  const authHeader = req.headers["authorization"];
+  const authHeader = req.headers["authorization"]?.trim();
 
   if (!authHeader) {
     return res.status(403).json({ error: "Authorization token is required" });
   }
 
   try {
+    // Decode the base58 string to Uint8Array
+    const decoded = bs58.decode(authHeader);
+
     // Parse the provided keypair from the token and verify
     const providedKeypair = anchor.web3.Keypair.fromSecretKey(
-      Uint8Array.from(JSON.parse(authHeader))
+      Uint8Array.from(decoded)
     );
 
     // Check if the provided keypair matches the wallet keypair
