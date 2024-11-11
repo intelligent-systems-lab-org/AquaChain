@@ -94,7 +94,6 @@ consumerRouter.use(ensureTokensInitialized);
  *       in: header
  */
 
-
 /**
  * @swagger
  * /consumer:
@@ -218,10 +217,7 @@ consumerRouter.post(
 
       // Create consumer account and initialize ATAs
       const consumerKeypair = Keypair.generate();
-      await initializeOrFetchATAs(
-        consumerKeypair.publicKey,
-        req.tokens!
-      );
+      await initializeOrFetchATAs(consumerKeypair.publicKey, req.tokens!);
 
       // Register consumer
       await program.methods
@@ -256,7 +252,6 @@ consumerRouter.post(
     }
   }
 );
-
 
 /**
  * @swagger
@@ -339,7 +334,6 @@ consumerRouter.get("/", async (req: Request, res: Response): Promise<any> => {
   }
 });
 
-
 /**
  * @swagger
  * /consumer/{pubkey}:
@@ -371,33 +365,29 @@ consumerRouter.get("/", async (req: Request, res: Response): Promise<any> => {
  *                   type: string
  *                   example: Failed to fetch consumer
  */
-consumerRouter.get(
-  "/:pubkey",
-  async (req: Request, res: Response) => {
-    try {
-      const { pubkey } = req.params;
+consumerRouter.get("/:pubkey", async (req: Request, res: Response) => {
+  try {
+    const { pubkey } = req.params;
 
-      const consumerKey = new PublicKey(pubkey);
-      const ATAs = await initializeOrFetchATAs(consumerKey, req.tokens!);
-      const consumerBalance = await getConsumerBalance(ATAs);
+    const consumerKey = new PublicKey(pubkey);
+    const ATAs = await initializeOrFetchATAs(consumerKey, req.tokens!);
+    const consumerBalance = await getConsumerBalance(ATAs);
 
-      const consumer = await program.account.consumer.fetch(consumerKey);
+    const consumer = await program.account.consumer.fetch(consumerKey);
 
-      res.status(200).json({
-        publicKey: consumerKey.toString(),
-        tariff: consumer.assignedTariff.toString(),
-        reservoir: consumer.assignedReservoir.toString(),
-        contractedCapacity: consumer.contractedCapacity.toString(),
-        blockRate: consumer.blockRate.toString(),
-        balance: consumerBalance,
-      });
-    } catch (error) {
-      console.error("Error fetching consumer:", error);
-      res.status(500).json({ error: "Failed to fetch consumer" });
-    }
+    res.status(200).json({
+      publicKey: consumerKey.toString(),
+      tariff: consumer.assignedTariff.toString(),
+      reservoir: consumer.assignedReservoir.toString(),
+      contractedCapacity: consumer.contractedCapacity.toString(),
+      blockRate: consumer.blockRate.toString(),
+      balance: consumerBalance,
+    });
+  } catch (error) {
+    console.error("Error fetching consumer:", error);
+    res.status(500).json({ error: "Failed to fetch consumer" });
   }
-);
-
+});
 
 /**
  * @swagger
@@ -543,7 +533,6 @@ consumerRouter.put(
   }
 );
 
-
 /**
  * @swagger
  * /consumer/{pubkey}/tariff:
@@ -657,7 +646,6 @@ consumerRouter.put(
     }
   }
 );
-
 
 /**
  * @swagger
@@ -773,7 +761,6 @@ consumerRouter.put(
   }
 );
 
-
 /**
  * @swagger
  * /consumer/{pubkey}/waste/charge:
@@ -878,7 +865,6 @@ consumerRouter.post(
     }
   }
 );
-
 
 /**
  * @swagger
@@ -993,7 +979,6 @@ consumerRouter.post(
   }
 );
 
-
 /**
  * @swagger
  * /consumer/{pubkey}/waste/pay:
@@ -1101,7 +1086,6 @@ consumerRouter.post(
     }
   }
 );
-
 
 /**
  * @swagger
