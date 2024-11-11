@@ -4,6 +4,10 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 const swaggerJsdoc = require("swagger-jsdoc");
+const fs = require('fs');
+const path = require('path');
+
+const overviewDescription = fs.readFileSync(path.resolve(__dirname, '../README.md'), 'utf-8');
 
 import { tariffRouter } from "./controllers/tariff";
 import { reservoirRouter } from "./controllers/reservoir";
@@ -21,8 +25,7 @@ const options = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "Aquachain API",
-      version: "1.0.0",
+      description: overviewDescription
     },
   },
   apis: ["./src/controllers/*.ts"], // Path to the API docs

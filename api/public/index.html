@@ -6,18 +6,26 @@
   <title>Aquachain API Documentation</title>
   <!-- Include RapiDoc from CDN -->
   <script type="module" src="https://unpkg.com/rapidoc/dist/rapidoc-min.js"></script>
+  <!-- Link to Google Fonts for Roboto and Montserrat -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
   <!-- RapiDoc Component with an ID to allow dynamic configuration -->
   <rapi-doc
     id="rapidoc"
     theme="light"
-    render-style="read"
+    render-style="focused"
+    regular-font="'Roboto', sans-serif"
+    mono-font="'Montserrat', monospace"
     schema-style="table"
-    show-header="true"
+    show-header="false"
     show-info="true"
+    nav-bg-color="#fff"
+    nav-item-spacing="compact"
+    primary-color="#177aef"
+    show-method-in-nav-bar="as-colored-block"
     allow-authentication="true"
-    show-components="true">
+    allow-server-selection="false">
   </rapi-doc>
 
   <script>
