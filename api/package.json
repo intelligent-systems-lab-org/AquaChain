@@ -1,0 +1,29 @@
+{
+  "name": "aquachain_api",
+  "version": "0.0.1",
+  "description": "REST API for verifying Aquachain programs.",
+  "main": "index.js",
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "dev": "ts-node-dev src/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "aquachain"
+  ],
+  "author": "Lee Bissessar",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.30.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "swagger-jsdoc": "^6.2.8",
+    "ts-node": "^10.9.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.8.6",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.6.3"
+  }
+}

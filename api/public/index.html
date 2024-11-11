@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aquachain API Documentation</title>
+  <!-- Include RapiDoc from CDN -->
+  <script type="module" src="https://unpkg.com/rapidoc/dist/rapidoc-min.js"></script>
+  <!-- Link to Google Fonts for Roboto and Montserrat -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- RapiDoc Component with an ID to allow dynamic configuration -->
+  <rapi-doc
+    id="rapidoc"
+    theme="light"
+    render-style="focused"
+    regular-font="'Roboto', sans-serif"
+    mono-font="'Montserrat', monospace"
+    schema-style="table"
+    show-header="false"
+    show-info="true"
+    nav-bg-color="#fff"
+    nav-item-spacing="compact"
+    primary-color="#177aef"
+    show-method-in-nav-bar="as-colored-block"
+    allow-authentication="true"
+    allow-server-selection="false">
+  </rapi-doc>
+
+  <script>
+    // Dynamically set the spec-url based on the current hostname and port
+    const specUrl = `${window.location.origin}/docs`;
+
+    // Set the spec-url attribute for RapiDoc
+    document.getElementById('rapidoc').setAttribute('spec-url', specUrl);
+  </script>
+</body>
+</html>
