@@ -77,7 +77,7 @@ const authorizeConsumerKeypair = (
 ) => {
   const authHeader = (req.headers as Record<string, string>)[
     "consumer-authorization"
-  ];
+  ]?.trim();
 
   if (!authHeader) {
     return res
@@ -86,9 +86,12 @@ const authorizeConsumerKeypair = (
   }
 
   try {
+    // Decode the base58 string to Uint8Array
+    const decoded = bs58.decode(authHeader);
+
     // Parse the consumer's private key from the token and validate
     const consumerKeypair = anchor.web3.Keypair.fromSecretKey(
-      Uint8Array.from(JSON.parse(authHeader))
+      Uint8Array.from(decoded)
     );
 
     // Attach the consumer keypair to the request for use in signing
