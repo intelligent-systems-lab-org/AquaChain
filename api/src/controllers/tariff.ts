@@ -91,7 +91,6 @@ const fetchTariff = async (tariffPDA: PublicKey) => {
   }
 };
 
-
 /**
  * @swagger
  * /tariff:
@@ -200,11 +199,11 @@ tariffRouter.post(
         tariff_key: tariffKey.toString(),
       });
     } catch (error) {
+      console.error("Failed to create tariff", error);
       res.status(500).json({ error: "Failed to create tariff" });
     }
   }
 );
-
 
 /**
  * @swagger
@@ -245,10 +244,10 @@ tariffRouter.get("/", async (req: Request, res: Response): Promise<any> => {
 
     return res.status(200).json(tariffList);
   } catch (error) {
+    console.error("Failed to retrieve tariffs:", error);
     res.status(500).json({ error: "Failed to retrieve tariffs" });
   }
 });
-
 
 /**
  * @swagger
@@ -312,7 +311,6 @@ tariffRouter.get(
     }
   }
 );
-
 
 /**
  * @swagger
