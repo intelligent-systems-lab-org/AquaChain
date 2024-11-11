@@ -69,7 +69,6 @@ const fetchReservoir = async (reservoirPDA: PublicKey) => {
   }
 };
 
-
 /**
  * @swagger
  * /reservoir:
@@ -157,12 +156,11 @@ reservoirRouter.post(
         reservoir_key: reservoirKey.toString(),
       });
     } catch (error) {
-      console.error("Initialization error:", error);
+      console.error("Failed to create reservoir:", error);
       res.status(500).json({ error: "Failed to create reservoir" });
     }
   }
 );
-
 
 /**
  * @swagger
@@ -210,7 +208,6 @@ reservoirRouter.get("/", async (req: Request, res: Response): Promise<any> => {
     res.status(500).json({ error: "Failed to retrieve reservoirs" });
   }
 });
-
 
 /**
  * @swagger
@@ -278,7 +275,6 @@ reservoirRouter.get(
     }
   }
 );
-
 
 /**
  * @swagger

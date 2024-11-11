@@ -199,7 +199,7 @@ tariffRouter.post(
         tariff_key: tariffKey.toString(),
       });
     } catch (error) {
-      console.error("Failed to create tariff", error);
+      console.error("Failed to create tariff:", error);
       res.status(500).json({ error: "Failed to create tariff" });
     }
   }
