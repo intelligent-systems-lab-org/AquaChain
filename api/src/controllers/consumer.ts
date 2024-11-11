@@ -15,15 +15,170 @@ import {
   authorizeConsumerKeypair,
   authorizeWallet,
 } from "../services/middleware";
+import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 
 const consumerRouter = require("express").Router();
 consumerRouter.use(ensureTokensInitialized);
 
-// POST endpoint to register a new consumer
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Consumer:
+ *       type: object
+ *       properties:
+ *         consumer_key:
+ *           type: string
+ *           description: Public key of the consumer
+ *         tariff_key:
+ *           type: string
+ *           description: Public key of the tariff
+ *         reservoir_key:
+ *           type: string
+ *           description: Public key of the reservoir
+ *         contracted_capacity:
+ *           type: integer
+ *           description: Contracted capacity of the consumer
+ *           minimum: 0
+ *         block_rate:
+ *           type: integer
+ *           description: Block rate of the consumer
+ *           minimum: 0
+ *         balance:
+ *           type: object
+ *           properties:
+ *             WTK:
+ *               type: string
+ *               description: Balance of WaterTokens
+ *             WST:
+ *               type: string
+ *               description: Balance of WasteTokens
+ *             WATC:
+ *               type: string
+ *               description: Balance of WasteCapacityTokens
+ *       required:
+ *         - consumer_key
+ *         - tariff_key
+ *         - reservoir_key
+ *         - contracted_capacity
+ *         - block_rate
+ *         - balance
+ *     ConsumerRequest:
+ *       type: object
+ *       properties:
+ *         tariff_key:
+ *           type: string
+ *           description: Public key of the tariff
+ *         reservoir_key:
+ *           type: string
+ *           description: Public key of the reservoir
+ *         contracted_capacity:
+ *           type: integer
+ *           description: Contracted capacity of the consumer
+ *         block_rate:
+ *           type: integer
+ *           description: Block rate of the consumer
+ *       required:
+ *         - tariff_key
+ *         - reservoir_key
+ *         - contracted_capacity
+ *         - block_rate
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: apiKey
+ *       name: Authorization
+ *       in: header
+ *     consumerAuth:
+ *       type: apiKey
+ *       name: Consumer-Authorization
+ *       in: header
+ */
+
+
+/**
+ * @swagger
+ * /consumer:
+ *   post:
+ *     summary: Register a new consumer
+ *     tags: [Consumer]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ConsumerRequest'
+ *     responses:
+ *       200:
+ *         description: Consumer registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 msg:
+ *                  type: string
+ *                  example: Consumer registered successfully. Please store your private key securely and do not share it. You will not be able to retrieve this key again.
+ *                 consumer:
+ *                  type: object
+ *                  properties:
+ *                    publicKey:
+ *                      type: string
+ *                    privateKey:
+ *                      type: string
+ *                 warning:
+ *                  type: string
+ *                  example: "IMPORTANT: This is the only time your private key will be displayed. Store it securely as it cannot be recovered if lost. Treat this key like a password—do not share it."
+ *       400:
+ *         description: Invalid field types or missing fields
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     msg:
+ *                       type: string
+ *                       example: Invalid or missing field types
+ *                     errors:
+ *                       type: object
+ *                       additionalProperties:
+ *                         type: string
+ *                         example: Should be `type`
+ *       404:
+ *         description: Tariff or reservoir not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *             examples:
+ *               tariffNotFound:
+ *                 value:
+ *                   error: "Tariff not found"
+ *               reservoirNotFound:
+ *                 value:
+ *                   error: "Reservoir not found"
+ *       500:
+ *         description: Failed to register consumer
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Failed to register consumer
+ */
 consumerRouter.post(
   "/",
   authorizeWallet,
-  async (req: Request, res: Response): Promise<any> => {
+  async (req: Request, res: Response) => {
     try {
       const { tariff_key, reservoir_key, contracted_capacity, block_rate } =
         req.body as ConsumerRequest;
@@ -47,7 +202,7 @@ consumerRouter.post(
         }, {} as Record<string, string>);
         return res
           .status(400)
-          .json({ error: { msg: "Invalid field types", errors } });
+          .json({ error: { msg: "Invalid or missing field types", errors } });
       }
 
       // Validate tariff_key and reservoir_key
@@ -63,11 +218,10 @@ consumerRouter.post(
 
       // Create consumer account and initialize ATAs
       const consumerKeypair = Keypair.generate();
-      const ATAs = await initializeOrFetchATAs(
+      await initializeOrFetchATAs(
         consumerKeypair.publicKey,
         req.tokens!
       );
-      console.log("ATAs fetched from server.");
 
       // Register consumer
       await program.methods
@@ -85,26 +239,65 @@ consumerRouter.post(
         .signers([consumerKeypair])
         .rpc();
 
-      const consumerBalance = await getConsumerBalance(ATAs);
+      const secretKey = bs58.encode(consumerKeypair.secretKey);
 
       return res.status(201).json({
         msg: "Consumer registered successfully. Please store your private key securely and do not share it. You will not be able to retrieve this key again.",
         consumer: {
           publicKey: consumerKeypair.publicKey.toString(),
-          privateKey: Array.from(consumerKeypair.secretKey), // This is a one-time display
+          privateKey: secretKey, // This is a one-time display
         },
         warning:
           "IMPORTANT: This is the only time your private key will be displayed. Store it securely as it cannot be recovered if lost. Treat this key like a password—do not share it.",
-        ...consumerBalance,
       });
     } catch (error) {
-      console.error("Error creating consumer:", error);
-      res.status(500).json({ error: "Failed to create consumer" });
+      console.error("Failed to register consumer:", error);
+      res.status(500).json({ error: "Failed to register consumer" });
     }
   }
 );
 
-// GET Endpoint to list all consumers
+
+/**
+ * @swagger
+ * /consumer:
+ *   get:
+ *     summary: Retrieve a list of all consumers
+ *     tags: [Consumer]
+ *     parameters:
+ *       - in: query
+ *         name: tariff_key
+ *         schema:
+ *           type: string
+ *         description: Filter consumers by tariff key
+ *       - in: query
+ *         name: reservoir_key
+ *         schema:
+ *           type: string
+ *         description: Filter consumers by reservoir key
+ *     responses:
+ *       200:
+ *         description: A list of consumers
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 consumers:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Consumer'
+ *       500:
+ *         description: Failed to fetch consumers
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Failed to fetch consumers
+ */
 consumerRouter.get("/", async (req: Request, res: Response): Promise<any> => {
   try {
     const { tariff_key, reservoir_key } = req.query;
@@ -134,7 +327,7 @@ consumerRouter.get("/", async (req: Request, res: Response): Promise<any> => {
           reservoir: consumer.account.assignedReservoir.toString(),
           contractedCapacity: consumer.account.contractedCapacity.toString(),
           blockRate: consumer.account.blockRate.toString(),
-          ...consumerBalance,
+          balance: consumerBalance,
         };
       })
     );
@@ -146,10 +339,41 @@ consumerRouter.get("/", async (req: Request, res: Response): Promise<any> => {
   }
 });
 
-// GET Endpoint to retrieve a specific consumer by pubkey
+
+/**
+ * @swagger
+ * /consumer/{pubkey}:
+ *   get:
+ *     summary: Retrieve a specific consumer by public key
+ *     tags: [Consumer]
+ *     parameters:
+ *       - in: path
+ *         name: pubkey
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Public key of the consumer
+ *     responses:
+ *       200:
+ *         description: Consumer data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Consumer'
+ *       500:
+ *         description: Failed to fetch consumer
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Failed to fetch consumer
+ */
 consumerRouter.get(
   "/:pubkey",
-  async (req: Request, res: Response): Promise<any> => {
+  async (req: Request, res: Response) => {
     try {
       const { pubkey } = req.params;
 
@@ -165,7 +389,7 @@ consumerRouter.get(
         reservoir: consumer.assignedReservoir.toString(),
         contractedCapacity: consumer.contractedCapacity.toString(),
         blockRate: consumer.blockRate.toString(),
-        ...consumerBalance,
+        balance: consumerBalance,
       });
     } catch (error) {
       console.error("Error fetching consumer:", error);
@@ -174,12 +398,85 @@ consumerRouter.get(
   }
 );
 
-// PUT Endpoint to update a consumer's data
+
+/**
+ * @swagger
+ * /consumer/{pubkey}:
+ *   put:
+ *     summary: Update a consumer's data
+ *     tags: [Consumer]
+ *     security:
+ *       - bearerAuth: []
+ *         consumerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: pubkey
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Public key of the consumer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               contracted_capacity:
+ *                 type: number
+ *                 description: The new contracted capacity
+ *               block_rate:
+ *                 type: number
+ *                 description: The new block rate
+ *     responses:
+ *       200:
+ *         description: Consumer updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Consumer updated successfully
+ *                 consumer:
+ *                   type: string
+ *                   description: The public key of the updated consumer
+ *                 updatedFields:
+ *                   type: object
+ *                   properties:
+ *                     contractedCapacity:
+ *                       type: string
+ *                       description: The updated contracted capacity
+ *                     blockRate:
+ *                       type: string
+ *                       description: The updated block rate
+ *       400:
+ *         description: At least one field is required for update
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: At least one of `contracted_capacity` or `block_rate` is required for update.
+ *       500:
+ *         description: Failed to update consumer
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Failed to update consumer
+ */
 consumerRouter.put(
   "/:pubkey",
   authorizeWallet,
   authorizeConsumerKeypair,
-  async (req: Request, res: Response): Promise<any> => {
+  async (req: Request, res: Response) => {
     try {
       const { pubkey } = req.params;
       const { contracted_capacity, block_rate } = req.body;
@@ -246,7 +543,73 @@ consumerRouter.put(
   }
 );
 
-// PUT endpoint to update a consumer's tariff
+
+/**
+ * @swagger
+ * /consumer/{pubkey}/tariff:
+ *   put:
+ *     summary: Update a consumer's tariff
+ *     tags: [Consumer]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: pubkey
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Public key of the consumer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               tariff_key:
+ *                 type: string
+ *                 description: The new tariff key
+ *     responses:
+ *       200:
+ *         description: Consumer tariff updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Consumer tariff updated successfully
+ *                 consumer:
+ *                   type: string
+ *                   description: The public key of the updated consumer
+ *                 updatedFields:
+ *                   type: object
+ *                   properties:
+ *                     tariff:
+ *                       type: string
+ *                       description: The updated tariff key
+ *       400:
+ *         description: tariff_key is required for update
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: tariff_key is required for update
+ *       500:
+ *         description: Failed to update consumer tariff
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Failed to update consumer tariff
+ */
 consumerRouter.put(
   "/:pubkey/tariff",
   authorizeWallet,
@@ -295,7 +658,73 @@ consumerRouter.put(
   }
 );
 
-// PUT endpoint to update a consumer's reservoir
+
+/**
+ * @swagger
+ * /consumer/{pubkey}/reservoir:
+ *   put:
+ *     summary: Update a consumer's reservoir
+ *     tags: [Consumer]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: pubkey
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Public key of the consumer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               reservoir_key:
+ *                 type: string
+ *                 description: The new reservoir key
+ *     responses:
+ *       200:
+ *         description: Consumer reservoir updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Consumer reservoir updated successfully
+ *                 consumer:
+ *                   type: string
+ *                   description: The public key of the updated consumer
+ *                 updatedFields:
+ *                   type: object
+ *                   properties:
+ *                     reservoir:
+ *                       type: string
+ *                       description: The updated reservoir key
+ *       400:
+ *         description: reservoir_key is required for update
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: reservoir_key is required for update
+ *       500:
+ *         description: Failed to update consumer reservoir
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Failed to update consumer reservoir
+ */
 consumerRouter.put(
   "/:pubkey/reservoir",
   authorizeWallet,
@@ -344,7 +773,70 @@ consumerRouter.put(
   }
 );
 
-// POST endpoint to dispose waste
+
+/**
+ * @swagger
+ * /consumer/{pubkey}/waste/charge:
+ *   post:
+ *     summary: Charge for waste treatment
+ *     tags: [Consumer]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: pubkey
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Public key of the consumer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               amount:
+ *                 type: integer
+ *                 description: The amount of waste to be treated
+ *     responses:
+ *       200:
+ *         description: Waste treatment charged successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Waste disposal charged successfully
+ *                 consumer:
+ *                   type: string
+ *                   description: The public key of the consumer
+ *                 amount:
+ *                   type: integer
+ *                   description: The amount of waste to be treated
+ *       400:
+ *         description: amount is required for update
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: amount is required for update
+ *       500:
+ *         description: Failed to charge for waste treatment
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Failed to charge for waste treatment
+ */
 consumerRouter.post(
   "/:pubkey/waste/charge",
   authorizeWallet,
@@ -376,113 +868,305 @@ consumerRouter.post(
         .rpc();
 
       res.status(200).json({
-        message: "Waste disposed successfully",
+        message: "Waste treatement charged successfully",
         consumer: consumerKey.toString(),
         amount: amount,
       });
     } catch (error) {
-      console.error("Error disposing waste:", error);
-      res.status(500).json({ error: "Failed to dispose waste" });
+      console.error("Error charging for waste disposal:", error);
+      res.status(500).json({ error: "Failed to charge for waste treatment" });
     }
   }
 );
 
-// POST endpoint to charge for water usage
+
+/**
+ * @swagger
+ * /consumer/{pubkey}/water/charge:
+ *   post:
+ *     summary: Charge for water usage
+ *     tags: [Consumer]
+ *     security:
+ *       - bearerAuth: []
+ *         consumerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: pubkey
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Public key of the consumer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               amount:
+ *                 type: integer
+ *                 description: The amount of water to charge
+ *     responses:
+ *       200:
+ *         description: Water usage charged successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Water usage charged successfully
+ *                 consumer:
+ *                   type: string
+ *                   description: The public key of the consumer
+ *                 amount:
+ *                   type: integer
+ *                   description: The amount of water charged
+ *       400:
+ *         description: amount is required for update
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: amount is required for update
+ *       500:
+ *         description: Failed to charge for water usage
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Failed to charge for water usage
+ */
 consumerRouter.post(
-    "/:pubkey/water/charge",
-    authorizeWallet,
-    authorizeConsumerKeypair,
-    async (req: Request, res: Response): Promise<any> => {
-      try {
-        const { pubkey } = req.params;
-        const { amount } = req.body;
+  "/:pubkey/water/charge",
+  authorizeWallet,
+  authorizeConsumerKeypair,
+  async (req: Request, res: Response): Promise<any> => {
+    try {
+      const { pubkey } = req.params;
+      const { amount } = req.body;
 
-        if (!amount) {
-          return res.status(400).json({ error: "amount is required for update" });
-        }
-
-        const consumerKey = new PublicKey(pubkey);
-
-        // Fetch the consumer's current account data
-        const consumerAccount = await program.account.consumer.fetch(consumerKey);
-        if (!consumerAccount) {
-          return res.status(404).json({ error: "Consumer not found" });
-        }
-
-        // Call the useWater instruction to charge for water usage
-        await program.methods
-          .useWater(
-            consumerAccount.assignedTariff,
-            consumerAccount.assignedReservoir,
-            new anchor.BN(amount)
-          )
-          .accounts({
-            consumer: consumerKey,
-            wtkMint: req.tokens!.WTK,
-            watcMint: req.tokens!.WATC,
-            agency: wallet.publicKey,
-          })
-          .signers([req.consumerKeypair!])
-          .rpc();
-
-        res.status(200).json({
-          message: "Water usage charged successfully",
-          consumer: consumerKey.toString(),
-          amount: amount,
-        });
-      } catch (error) {
-        console.error("Error charging for water usage:", error);
-        res.status(500).json({ error: "Failed to charge for water usage" });
+      if (!amount) {
+        return res.status(400).json({ error: "amount is required for update" });
       }
-    }
-)
 
-// POST endpoint to pay for waste treatment
-consumerRouter.post(
-    "/:pubkey/waste/pay",
-    authorizeWallet,
-    authorizeConsumerKeypair,
-    async (req: Request, res: Response): Promise<any> => {
-      try {
-        const { pubkey } = req.params;
-        const { amount } = req.body;
-  
-        if (!amount) {
-          return res.status(400).json({ error: "amount is required for update" });
-        }
-  
-        const consumerKey = new PublicKey(pubkey);
-  
-        // Fetch the consumer's current account data
-        const consumerAccount = await program.account.consumer.fetch(consumerKey);
-        if (!consumerAccount) {
-          return res.status(404).json({ error: "Consumer not found" });
-        }
-  
-        // Call the payForWaste instruction to pay for waste treatment
-        await program.methods
-          .payForWaste(consumerAccount.assignedTariff, new anchor.BN(amount))
-          .accounts({
-            consumer: consumerKey,
-            wstMint: req.tokens!.WST,
-            agency: wallet.publicKey,
-          })
-          .signers([req.consumerKeypair!])
-          .rpc();
-  
-        res.status(200).json({
-          message: "Waste treatment paid successfully",
-          consumer: consumerKey.toString(),
-          amount: amount,
-        });
-      } catch (error) {
-        console.error("Error paying for waste treatment:", error);
-        res.status(500).json({ error: "Failed to pay for waste treatment" });
+      const consumerKey = new PublicKey(pubkey);
+
+      // Fetch the consumer's current account data
+      const consumerAccount = await program.account.consumer.fetch(consumerKey);
+      if (!consumerAccount) {
+        return res.status(404).json({ error: "Consumer not found" });
       }
+
+      // Call the useWater instruction to charge for water usage
+      await program.methods
+        .useWater(
+          consumerAccount.assignedTariff,
+          consumerAccount.assignedReservoir,
+          new anchor.BN(amount)
+        )
+        .accounts({
+          consumer: consumerKey,
+          wtkMint: req.tokens!.WTK,
+          watcMint: req.tokens!.WATC,
+          agency: wallet.publicKey,
+        })
+        .signers([req.consumerKeypair!])
+        .rpc();
+
+      res.status(200).json({
+        message: "Water usage charged successfully",
+        consumer: consumerKey.toString(),
+        amount: amount,
+      });
+    } catch (error) {
+      console.error("Error charging for water usage:", error);
+      res.status(500).json({ error: "Failed to charge for water usage" });
     }
+  }
 );
 
-// POST endpoint to pay for water
+
+/**
+ * @swagger
+ * /consumer/{pubkey}/waste/pay:
+ *   post:
+ *     summary: Pay for waste treatment
+ *     tags: [Consumer]
+ *     security:
+ *       - bearerAuth: []
+ *         consumerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: pubkey
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Public key of the consumer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               amount:
+ *                 type: integer
+ *                 description: The amount of waste to be treated
+ *     responses:
+ *       200:
+ *         description: Waste treatment paid successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Waste treatment paid successfully
+ *                 consumer:
+ *                   type: string
+ *                   description: The public key of the consumer
+ *                 amount:
+ *                   type: integer
+ *                   description: The amount of waste to be treated
+ *       400:
+ *         description: amount is required for update
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: amount is required for update
+ *       500:
+ *         description: Failed to pay for waste treatment
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Failed to pay for waste treatment
+ */
+consumerRouter.post(
+  "/:pubkey/waste/pay",
+  authorizeWallet,
+  authorizeConsumerKeypair,
+  async (req: Request, res: Response): Promise<any> => {
+    try {
+      const { pubkey } = req.params;
+      const { amount } = req.body;
+
+      if (!amount) {
+        return res.status(400).json({ error: "amount is required for update" });
+      }
+
+      const consumerKey = new PublicKey(pubkey);
+
+      // Fetch the consumer's current account data
+      const consumerAccount = await program.account.consumer.fetch(consumerKey);
+      if (!consumerAccount) {
+        return res.status(404).json({ error: "Consumer not found" });
+      }
+
+      // Call the payForWaste instruction to pay for waste treatment
+      await program.methods
+        .payForWaste(consumerAccount.assignedTariff, new anchor.BN(amount))
+        .accounts({
+          consumer: consumerKey,
+          wstMint: req.tokens!.WST,
+          agency: wallet.publicKey,
+        })
+        .signers([req.consumerKeypair!])
+        .rpc();
+
+      res.status(200).json({
+        message: "Waste treatment paid successfully",
+        consumer: consumerKey.toString(),
+        amount: amount,
+      });
+    } catch (error) {
+      console.error("Error paying for waste treatment:", error);
+      res.status(500).json({ error: "Failed to pay for waste treatment" });
+    }
+  }
+);
+
+
+/**
+ * @swagger
+ * /consumer/{pubkey}/water/pay:
+ *   post:
+ *     summary: Pay for water usage
+ *     tags: [Consumer]
+ *     security:
+ *       - bearerAuth: []
+ *         consumerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: pubkey
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Public key of the consumer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               amount:
+ *                 type: integer
+ *                 description: The amount of water to pay for
+ *     responses:
+ *       200:
+ *         description: Water paid successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Water paid successfully
+ *                 consumer:
+ *                   type: string
+ *                   description: The public key of the consumer
+ *                 amount:
+ *                   type: integer
+ *                   description: The amount of water paid for
+ *       400:
+ *         description: amount is required for update
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: amount is required for update
+ *       500:
+ *         description: Failed to pay for water
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Failed to pay for water
+ */
 consumerRouter.post(
   "/:pubkey/water/pay",
   authorizeWallet,
