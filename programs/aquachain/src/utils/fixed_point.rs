@@ -1,24 +1,41 @@
 use std::{
     cmp::{Ordering, PartialOrd},
     fmt::Display,
-    ops::{Add, Div, Mul, Sub}, u128,
+    ops::{Add, Div, Mul, Sub},
+    u128,
 };
 
-pub const SCALE: u128 = 1_000; // Scale factor, representing 3 decimal places
+/// Scale factor representing 3 decimal places of precision (1000)
+pub const SCALE: u128 = 1_000;
 
+/// A fixed-point decimal type that handles numbers with 3 decimal places of precision
+///
+/// Internal representation uses u128 scaled by 1000 to represent decimal values.
+/// For example, 1.234 is stored as 1234.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct FixedPoint(u128);
 
 impl FixedPoint {
+    /// Creates a new FixedPoint number from a u64 value
+    ///
+    /// # Arguments
+    /// * `value` - The u64 value to convert to fixed-point representation
     fn new(value: u64) -> Self {
         Self(value as u128)
     }
 
+    /// Converts the fixed-point number to a u64 value
+    ///
+    /// # Returns
+    /// The fixed-point number as a u64, maintaining the scale factor
     fn to_u64(&self) -> u64 {
         self.0 as u64
     }
 
-    // Static method to return "1.000" as a FixedPoint instance
+    /// Returns a FixedPoint instance representing 1.000
+    ///
+    /// # Returns
+    /// A FixedPoint value equal to 1.000
     pub fn one() -> Self {
         FixedPoint(SCALE)
     }

@@ -39,6 +39,15 @@ Water resource management is a critical issue in many regions, especially those 
 - **Automated Billing**: Handles billing cycles and payments through smart contracts
 - **RESTful API**: Provides easy integration with existing systems via a comprehensive API
 
+### Project Structure
+```
+aquachain/
+├── api/            # Express.js REST API server
+├── assets/         # Documentation resources
+├── programs/       # Solana smart contracts written in
+└── tests/          # Integration & unit tests
+```
+
 ### Tokens
 
 | Token | Symbol | Description |
@@ -73,19 +82,10 @@ Rules:
 - **WaterToken:** A water token that is transacted every $X \ m^3$ to the consumer. There is a flat rate at the start which is determined based on the WaterCapacity contracted amount. Higher contracted Water Capacity selected results in higher contracted rate per $X \ m^3$.
 - **WaterCapacityToken:** The amount that the consumer is contracted at the start. Once the contracted amount is completed the consumer is then charged based on the the maximum and current reservoir capacity such that reservoir capacities exceeding the maximum capacity decrease the water rates in block (i.e., `chargedRate = blockRate * (2 - (currentCapacity / maxCapacity)`). 
 
-### Project Structure
-```
-aquachain/
-├── api/            # Express.js REST API server
-├── assets/         # Documentation resources
-├── programs/       # Solana smart contracts written in
-└── tests/          # Integration & unit tests
-```
-
-## Installation
+## Quick Start
 
 > [!NOTE]
-> If you are on **Windows**, you will need **WSL (Windows Subsystem for Linux)** to run Anchor and Solana programs.
+> If you are on **Windows**, you will need **WSL2 (Windows Subsystem for Linux)** to run Anchor and Solana programs.
 
 To set up Aquachain on your local machine, follow these steps:
 
