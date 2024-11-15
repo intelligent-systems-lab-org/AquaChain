@@ -47,8 +47,8 @@ pub struct UpdateConsumerTariff<'info> {
 
 /// Change the assigned tariff for an existing consumer
 ///
-/// Updates a consumer's assigned tariff to a new tariff account
-/// Both tariffs must be valid PDA accounts owned by the same agency
+/// Updates a consumer's assigned tariff to a new tariff account.
+/// Both tariffs must be valid PDA accounts owned by the same agency.
 ///
 /// # Arguments
 /// * `ctx` - Context containing the consumer, current tariff, new tariff, agency signer and system program

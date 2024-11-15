@@ -45,7 +45,7 @@ pub struct PayForWaste<'info> {
     pub associated_token_program: Program<'info, AssociatedToken>,
 }
 
-/// Pay for waste treament by burning WST tokens
+/// Pay for waste treatment by burning WST tokens
 ///
 /// This function allows a consumer to pay for waste treatment by burning WST tokens
 /// from their token account. The amount of tokens burned represents the payment for

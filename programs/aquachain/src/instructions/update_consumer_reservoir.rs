@@ -47,8 +47,8 @@ pub struct UpdateConsumerReservoir<'info> {
 
 /// Change the assigned reservoir for an existing consumer
 ///
-/// Updates a consumer's assigned reservoir to a new reservoir account
-/// Both reservoirs must be valid PDA accounts owned by the same agency
+/// Updates a consumer's assigned reservoir to a new reservoir account.
+/// Both reservoirs must be valid PDA accounts owned by the same agency.
 ///
 /// # Arguments
 /// * `ctx` - Context containing the consumer, current reservoir, new reservoir, agency signer and system program
