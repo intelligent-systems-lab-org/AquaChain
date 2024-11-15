@@ -8,7 +8,23 @@ use anchor_spl::{
     token::{self, Mint, Token, TokenAccount},
 };
 
-// Add these accounts and instruction for burning tokens on behalf of consumers
+/// Pay for waste instruction context
+///
+/// The **PayForWaste** context is used to burn WST tokens from a consumer's account as payment for waste treatment.
+///
+/// # Fields
+/// * `consumer` - The consumer account making the payment
+/// * `tariff` - The PDA tariff account assigned to this consumer
+/// * `agency` - The authority that can burn tokens
+/// * `consumer_wst` - The consumer's WST token account
+/// * `wst_mint` - The WST token mint
+/// * `token_program` - Required for token operations
+/// * `associated_token_program` - Required for associated token account
+///
+/// # Seeds for Tariff PDA
+/// * `"tariff"` - Constant string
+/// * `agency` - Agency's public key
+/// * `tariff_key` - Unique identifier for the tariff
 #[derive(Accounts)]
 #[instruction(tariff_key: Pubkey)]
 pub struct PayForWaste<'info> {
@@ -20,7 +36,7 @@ pub struct PayForWaste<'info> {
     )]
     pub tariff: Account<'info, Tariff>,
     #[account(mut)]
-    pub agency: Signer<'info>, // WASA's or agency's authorized wallet
+    pub agency: Signer<'info>, // agency's authorized wallet
     #[account(mut, associated_token::mint = wst_mint, associated_token::authority = consumer)]
     pub consumer_wst: Account<'info, TokenAccount>,
     #[account(mut, mint::authority = agency)]
@@ -29,6 +45,23 @@ pub struct PayForWaste<'info> {
     pub associated_token_program: Program<'info, AssociatedToken>,
 }
 
+/// Pay for waste treament by burning WST tokens
+///
+/// This function allows a consumer to pay for waste treatment by burning WST tokens
+/// from their token account. The amount of tokens burned represents the payment for
+/// waste treatment.
+///
+/// # Arguments
+/// * `ctx` - Context containing consumer, tariff, reservoir, agency and token accounts
+/// * `tariff_key` - Public key of the tariff assigned to this consumer
+/// * `amount` - Amount of WST tokens to burn as payment
+///
+/// # Errors
+/// * `CustomError::Unauthorized` - If tariff_key does not match consumer's assigned values
+/// * `CustomError::OverPayment` - If payment amount exceeds consumer's WST balance
+///
+/// # Returns
+/// * `Ok(())` on successful payment
 pub fn pay_for_waste(ctx: Context<PayForWaste>, tariff_key: Pubkey, amount: u64) -> Result<()> {
     let consumer = &mut ctx.accounts.consumer;
 
@@ -39,7 +72,10 @@ pub fn pay_for_waste(ctx: Context<PayForWaste>, tariff_key: Pubkey, amount: u64)
     );
 
     // ensure that the payment does not exceed the current balance
-    require!(ctx.accounts.consumer_wst.amount >= amount, CustomError::OverPayment);
+    require!(
+        ctx.accounts.consumer_wst.amount >= amount,
+        CustomError::OverPayment
+    );
 
     // Burn WST tokens
     token::burn(

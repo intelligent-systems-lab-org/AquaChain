@@ -8,7 +8,29 @@ use anchor_spl::{
     token::{self, Mint, Token, TokenAccount},
 };
 
-// Add these accounts and instruction for burning tokens on behalf of consumers
+/// Pay for water instruction context
+///
+/// The **PayForWater** context is used to burn WTK tokens from a consumer's account as payment for water usage.
+///
+/// # Fields
+/// * `consumer` - The consumer account making the payment
+/// * `tariff` - The PDA tariff account assigned to this consumer
+/// * `reservoir` - The PDA reservoir account assigned to this consumer
+/// * `agency` - The authority that can burn tokens
+/// * `consumer_wtk` - The consumer's WTK token account
+/// * `wtk_mint` - The WTK token mint
+/// * `token_program` - Required for token operations
+/// * `associated_token_program` - Required for associated token account
+///
+/// # Seeds for Tariff PDA
+/// * `"tariff"` - Constant string
+/// * `agency` - Agency's public key
+/// * `tariff_key` - Unique identifier for the tariff
+///
+/// # Seeds for Reservoir PDA
+/// * `"reservoir"` - Constant string
+/// * `agency` - Agency's public key
+/// * `reservoir_key` - Unique identifier for the reservoir
 #[derive(Accounts)]
 #[instruction(tariff_key: Pubkey, reservoir_key: Pubkey)]
 pub struct PayForWater<'info> {
@@ -29,7 +51,7 @@ pub struct PayForWater<'info> {
     )]
     pub reservoir: Account<'info, Reservoir>, // Current Reservoir assigned to this consumer
     #[account(mut)]
-    pub agency: Signer<'info>, // WASA's or agency's authorized wallet
+    pub agency: Signer<'info>, // agency's authorized wallet
     #[account(mut, associated_token::mint = wtk_mint, associated_token::authority = consumer)]
     pub consumer_wtk: Account<'info, TokenAccount>,
     #[account(mut, mint::authority = agency)]
@@ -38,6 +60,24 @@ pub struct PayForWater<'info> {
     pub associated_token_program: Program<'info, AssociatedToken>,
 }
 
+/// Pay for water consumption by burning WTK tokens
+///
+/// This function allows a consumer to pay for their water usage by burning WTK tokens
+/// from their token account. The amount of tokens burned represents the payment for
+/// water consumption.
+///
+/// # Arguments
+/// * `ctx` - Context containing consumer, tariff, reservoir, agency and token accounts
+/// * `tariff_key` - Public key of the tariff assigned to this consumer
+/// * `reservoir_key` - Public key of the reservoir assigned to this consumer
+/// * `amount` - Amount of WTK tokens to burn as payment
+///
+/// # Errors
+/// * `CustomError::Unauthorized` - If tariff_key or reservoir_key do not match consumer's assigned values
+/// * `CustomError::OverPayment` - If payment amount exceeds consumer's WTK balance
+///
+/// # Returns
+/// * `Ok(())` on successful payment
 pub fn pay_for_water(
     ctx: Context<PayForWater>,
     tariff_key: Pubkey,
@@ -58,7 +98,10 @@ pub fn pay_for_water(
     );
 
     // ensure that the payment does not exceed the current balance
-    require!(ctx.accounts.consumer_wtk.amount >= amount, CustomError::OverPayment);
+    require!(
+        ctx.accounts.consumer_wtk.amount >= amount,
+        CustomError::OverPayment
+    );
 
     // Burn WTK tokens
     token::burn(
