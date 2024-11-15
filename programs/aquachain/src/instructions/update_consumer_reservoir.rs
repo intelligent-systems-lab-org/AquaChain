@@ -1,6 +1,22 @@
 use crate::{Consumer, CustomError, Reservoir};
 use anchor_lang::prelude::*;
 
+/// Update existing **Consumer** reservoir account context
+///
+/// The **Consumer** account's assigned reservoir will be updated to a new reservoir.
+/// Both the current and new reservoirs must be valid PDA accounts owned by the same agency.
+///
+/// # Fields
+/// * `consumer` - The consumer account to be updated
+/// * `current_reservoir` - The PDA account of the consumer's current assigned reservoir
+/// * `new_reservoir` - The PDA account of the new reservoir to assign
+/// * `agency` - The owner that is authorized to sign operations on its behalf
+/// * `system_program` - Required for account operations
+///
+/// # Seeds for reservoir PDAs
+/// * `"reservoir"` - Constant string
+/// * `agency` - Agency's public key
+/// * `reservoir_key` - Unique identifier for the reservoir
 #[derive(Accounts)]
 #[instruction(current_reservoir_key: Pubkey, new_reservoir_key: Pubkey)]
 pub struct UpdateConsumerReservoir<'info> {
@@ -29,6 +45,22 @@ pub struct UpdateConsumerReservoir<'info> {
     pub system_program: Program<'info, System>,
 }
 
+/// Change the assigned reservoir for an existing consumer
+///
+/// Updates a consumer's assigned reservoir to a new reservoir account
+/// Both reservoirs must be valid PDA accounts owned by the same agency
+///
+/// # Arguments
+/// * `ctx` - Context containing the consumer, current reservoir, new reservoir, agency signer and system program
+/// * `current_reservoir_key` - Public key of the consumer's current assigned reservoir
+/// * `new_reservoir_key` - Public key of the new reservoir to assign
+///
+/// # Errors
+/// * `CustomError::Unauthorized` - If current_reservoir_key doesn't match consumer's assigned reservoir
+/// * `CustomError::Unauthorized` - If new_reservoir_key doesn't match the new reservoir account's key
+///
+/// # Returns
+/// * `Ok(())` on successful update
 pub fn update_consumer_reservoir(
     ctx: Context<UpdateConsumerReservoir>,
     current_reservoir_key: Pubkey,

@@ -8,6 +8,31 @@ use anchor_spl::{
     token::{self, Mint, Token, TokenAccount},
 };
 
+/// Update existing **Consumer** context
+///
+/// Updates an existing **Consumer** account with new tariff, reservoir, contracted capacity and block rate.
+/// Also handles burning existing WATC tokens and minting new ones based on the updated contracted capacity.
+///
+/// # Fields
+/// * `consumer` - The consumer account to be updated (must be signer)
+/// * `tariff` - The PDA account containing tariff configuration
+/// * `reservoir` - The PDA account containing reservoir configuration  
+/// * `agency` - The authority that can sign for minting tokens
+/// * `consumer_watc` - The consumer's WaterCapacityToken account
+/// * `watc_mint` - The mint for WaterCapacityTokens
+/// * `system_program` - Required for account operations
+/// * `token_program` - Required for token operations
+/// * `associated_token_program` - Required for associated token operations
+///
+/// # Seeds for Tariff PDA
+/// * `"tariff"` - Constant string
+/// * `agency` - Agency's public key  
+/// * `tariff_key` - Unique identifier for this tariff
+///
+/// # Seeds for Reservoir PDA
+/// * `"reservoir"` - Constant string
+/// * `agency` - Agency's public key
+/// * `reservoir_key` - Unique identifier for this reservoir
 #[derive(Accounts)]
 #[instruction(tariff_key: Pubkey, reservoir_key: Pubkey)]
 pub struct UpdateConsumer<'info> {
@@ -42,6 +67,25 @@ pub struct UpdateConsumer<'info> {
     pub associated_token_program: Program<'info, AssociatedToken>,
 }
 
+/// Update block rate and contracted capacity of existing consumer account
+///
+/// Updates an existing consumer's configuration including contracted capacity and block rate.
+/// Burns any existing WATC tokens and mints new ones based on the updated capacity.
+///
+/// # Arguments
+/// * `ctx` - Context containing consumer account, tariff, reservoir, agency and token accounts
+/// * `tariff_key` - Public key identifying the tariff to assign
+/// * `reservoir_key` - Public key identifying the reservoir to assign  
+/// * `contracted_capacity` - New contracted capacity value (must be > 0)
+/// * `block_rate` - New block rate value (must be > 0)
+///
+/// # Errors
+/// * `CustomError::Unauthorized` - If tariff_key or reservoir_key don't match accounts
+/// * `CustomError::InvalidCapacity` - If contracted_capacity is 0
+/// * `CustomError::InvalidRate` - If block_rate is 0
+///
+/// # Returns
+/// * `Ok(())` on successful update
 pub fn update_consumer(
     ctx: Context<UpdateConsumer>,
     tariff_key: Pubkey,

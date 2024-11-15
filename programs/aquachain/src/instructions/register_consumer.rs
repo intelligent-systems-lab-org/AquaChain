@@ -8,6 +8,31 @@ use anchor_spl::{
     token::{self, Mint, Token, TokenAccount},
 };
 
+/// Initialize **RegisterConsumer** account context
+///
+/// The **RegisterConsumer** context is used to register a new consumer account with an assigned tariff,
+/// reservoir, and initial WATC token allocation based on contracted capacity.
+///
+/// # Fields
+/// * `consumer` - The new consumer account to be initialized
+/// * `tariff` - The PDA tariff account assigned to this consumer
+/// * `reservoir` - The PDA reservoir account assigned to this consumer  
+/// * `agency` - The authority that can register new consumers
+/// * `consumer_watc` - The consumer's WATC token account
+/// * `watc_mint` - The WATC token mint
+/// * `system_program` - Required for account creation
+/// * `token_program` - Required for token operations
+/// * `associated_token_program` - Required for associated token account
+///
+/// # Seeds for Tariff PDA
+/// * `"tariff"` - Constant string
+/// * `agency` - Agency's public key
+/// * `tariff_key` - Unique identifier for the tariff
+///
+/// # Seeds for Reservoir PDA  
+/// * `"reservoir"` - Constant string
+/// * `agency` - Agency's public key
+/// * `reservoir_key` - Unique identifier for the reservoir
 #[derive(Accounts)]
 #[instruction(tariff_key: Pubkey, reservoir_key: Pubkey)]
 pub struct RegisterConsumer<'info> {
@@ -43,6 +68,25 @@ pub struct RegisterConsumer<'info> {
 }
 
 // Register a new consumer with contracted capacity and block rate
+/// Register a new consumer with contracted capacity and block rate
+///
+/// This function registers a new consumer account and initializes it with the provided
+/// contracted capacity and block rate. It also mints WATC tokens to the consumer based
+/// on their contracted capacity.
+///
+/// # Arguments
+/// * `ctx` - Context containing consumer, tariff, reservoir, agency and token accounts
+/// * `tariff_key` - Public key of the tariff assigned to this consumer
+/// * `reservoir_key` - Public key of the reservoir assigned to this consumer
+/// * `contracted_capacity` - Amount of water capacity contracted by the consumer (must be > 0)
+/// * `block_rate` - Rate charged per block of water usage (must be > 0)
+///
+/// # Errors
+/// * `CustomError::InvalidCapacity` - If contracted_capacity is 0
+/// * `CustomError::InvalidRate` - If block_rate is 0
+///
+/// # Returns
+/// * `Ok(())` on successful registration
 pub fn register_consumer(
     ctx: Context<RegisterConsumer>,
     tariff_key: Pubkey,
