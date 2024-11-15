@@ -9,6 +9,23 @@ use anchor_spl::{
     token::{self, Mint, Token, TokenAccount},
 };
 
+/// Dispose waste instruction context
+///
+/// The **DisposeWaste** context is used to mint WST tokens to a consumer's account as payment for waste treatment.
+///
+/// # Fields
+/// * `consumer` - The consumer account making the payment
+/// * `tariff` - The PDA tariff account assigned to this consumer
+/// * `agency` - The authority that can mint tokens
+/// * `consumer_wst` - The consumer's WST token account
+/// * `wst_mint` - The WST token mint
+/// * `token_program` - Required for token operations
+/// * `associated_token_program` - Required for associated token account
+///
+/// # Seeds for Tariff PDA
+/// * `"tariff"` - Constant string
+/// * `agency` - Agency's public key
+/// * `tariff_key` - Unique identifier for the tariff
 #[derive(Accounts)]
 #[instruction(tariff_key: Pubkey)]
 pub struct DisposeWaste<'info> {
@@ -35,6 +52,23 @@ pub struct DisposeWaste<'info> {
     pub associated_token_program: Program<'info, AssociatedToken>,
 }
 
+/// Charge consumer for waste treatment by minting WST tokens
+///
+/// This function charges a consumer for their waste disposal by minting WST tokens
+/// to their token account. The amount of tokens minted represents the payment for
+/// waste treatment based on the waste rate in the tariff.
+///
+/// # Arguments
+/// * `ctx` - Context containing consumer, tariff, agency and token accounts
+/// * `tariff_key` - Public key of the tariff assigned to this consumer
+/// * `amount` - Amount of waste units disposed, used to calculate WST tokens to mint
+///
+/// # Errors
+/// * `CustomError::Unauthorized` - If tariff_key does not match consumer's assigned value
+/// * `CustomError::InvalidAmount` - If amount is zero
+///
+/// # Returns
+/// * `Ok(())` on successful payment
 pub fn dispose_waste(ctx: Context<DisposeWaste>, tariff_key: Pubkey, amount: u64) -> Result<()> {
     let tariff = &ctx.accounts.tariff;
 

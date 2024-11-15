@@ -9,6 +9,31 @@ use anchor_spl::{
     token::{self, Mint, Token, TokenAccount},
 };
 
+/// Use water instruction context
+///
+/// The **UseWater** context is used to mint WTK tokens to a consumer's account as payment for water usage.
+///
+/// # Fields
+/// * `consumer` - The consumer account making the payment
+/// * `tariff` - The PDA tariff account assigned to this consumer
+/// * `reservoir` - The PDA reservoir account assigned to this consumer
+/// * `agency` - The authority that can mint tokens
+/// * `consumer_wtk` - The consumer's WTK token account
+/// * `consumer_watc` - The consumer's WATC token account
+/// * `wtk_mint` - The WTK token mint
+/// * `watc_mint` - The WATC token mint
+/// * `token_program` - Required for token operations
+/// * `associated_token_program` - Required for associated token account
+///
+/// # Seeds for Tariff PDA
+/// * `"tariff"` - Constant string
+/// * `agency` - Agency's public key
+/// * `tariff_key` - Unique identifier for the tariff
+///
+/// # Seeds for Reservoir PDA
+/// * `"reservoir"` - Constant string
+/// * `agency` - Agency's public key
+/// * `reservoir_key` - Unique identifier for the reservoir
 #[derive(Accounts)]
 #[instruction(tariff_key: Pubkey, reservoir_key: Pubkey)]
 pub struct UseWater<'info> {
@@ -51,6 +76,24 @@ pub struct UseWater<'info> {
     pub associated_token_program: Program<'info, AssociatedToken>,
 }
 
+/// Charge consumer for water consumption by minting WTK tokens
+///
+/// This function charges a consumer for their water usage by minting WTK tokens
+/// to their token account. The amount of tokens minted represents the payment for
+/// water consumption. WATC tokens are burned in proportion to water usage.
+///
+/// # Arguments
+/// * `ctx` - Context containing consumer, tariff, reservoir, agency and token accounts
+/// * `tariff_key` - Public key of the tariff assigned to this consumer
+/// * `reservoir_key` - Public key of the reservoir assigned to this consumer
+/// * `amount` - Amount of water units consumed, used to calculate WTK tokens to mint
+///
+/// # Errors
+/// * `CustomError::Unauthorized` - If tariff_key or reservoir_key do not match consumer's assigned values
+/// * `CustomError::InvalidAmount` - If amount is zero
+///
+/// # Returns
+/// * `Ok(())` on successful payment
 pub fn use_water(
     ctx: Context<UseWater>,
     tariff_key: Pubkey,
