@@ -34,7 +34,7 @@ Aquachain is a blockchain-powered solution for managing industrial water and was
 Water resource management is a critical issue in many regions, especially those prone to seasonal variations in water availability. Traditional billing systems lack flexibility and adaptability to such conditions, often leading to inefficient resource use and unsustainable practices. Aquachain aims to address these challenges by using **smart contracts** to implement dynamic tariffs that incentivize conservation and fair usage of water resources. By building on Solana, Aquachain benefits from high transaction speeds and low costs, making it suitable for large-scale, real-time applications.
 
 ### Key Features
-- **Smart Contract-based Tariffs**: Implements various tariff structures including uniform, seasonal increasing, and seasonal decreasing block rates
+- **Smart Contract-based Tariffs**: Implements various tariff structures, including uniform, seasonal increasing, and seasonal decreasing block rates. These tariff structures are designed to incentivize sustainable water practices based on resource availability and are granular to demographics and consumer type.  
 - **Resource Tracking**: Monitors water usage and waste treatment through blockchain tokens
 - **Automated Billing**: Handles billing cycles and payments through smart contracts
 - **RESTful API**: Provides easy integration with existing systems via a comprehensive API
