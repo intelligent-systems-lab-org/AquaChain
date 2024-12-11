@@ -6,6 +6,7 @@ use anchor_lang::prelude::*;
 /// - Water Token (WTK)
 /// - Waste Token (WST)
 /// - Water Capacity Token (WATC)
+/// - WasteWater Capacity Token (WSTC)
 #[account]
 #[derive(InitSpace)]
 pub struct Tokens {
@@ -19,5 +20,9 @@ pub struct Tokens {
 
     /// The mint address for the Water Capacity Token (WATC),
     /// used to represent the consumer's remaining contracted water capacity
-    pub watc: Pubkey
+    pub watc: Pubkey,
+
+    /// The mint address for the WasteWater Capacity Token (WSTC),
+    /// used to represent the consumer's remaining contracted amount of allowable waste
+    pub wstc: Pubkey
 }

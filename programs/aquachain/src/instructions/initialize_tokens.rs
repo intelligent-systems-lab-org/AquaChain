@@ -47,6 +47,7 @@ pub fn initialize_tokens(
     water_token: Pubkey,
     water_capacity_token: Pubkey,
     waste_token: Pubkey,
+    wastewater_capacity_token: Pubkey,
 ) -> Result<()> {
     if ctx.accounts.tokens.wtk != Pubkey::default() {
         msg!("Tokens already initialized");
@@ -55,12 +56,14 @@ pub fn initialize_tokens(
         tokens.wtk = water_token;
         tokens.watc = water_capacity_token;
         tokens.wst = waste_token;
+        tokens.wstc = wastewater_capacity_token;
 
         msg!(
-            "Token mints initialized with WaterToken: {}, WaterCapacityToken: {}, WasteToken: {}",
+            "Token mints initialized with WaterToken: {}, WaterCapacityToken: {}, WasteToken: {}, WasteWaterCapacityToken: {}",
             water_token,
             water_capacity_token,
-            waste_token
+            waste_token,
+            wastewater_capacity_token
         );
     }
 
