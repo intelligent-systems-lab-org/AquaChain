@@ -142,8 +142,9 @@ pub mod aquachain {
         water_capacity_token: Pubkey,
         waste_token: Pubkey,
         wastewater_capacity_token: Pubkey,
+        aquacoin: Pubkey,
     ) -> Result<()> {
-        instructions::initialize_tokens(ctx, water_token, water_capacity_token, waste_token, wastewater_capacity_token)
+        instructions::initialize_tokens(ctx, water_token, water_capacity_token, waste_token, wastewater_capacity_token, aquacoin)
     }
 }
 

@@ -17,6 +17,8 @@ describe("tokens", () => {
   let wtkMint: PublicKey;
   let watcMint: PublicKey;
   let wstMint: PublicKey;
+  let wstcMint: PublicKey;
+  let aqcMint : PublicKey;
 
   before(async () => {
     // Initialize token mints
@@ -41,10 +43,24 @@ describe("tokens", () => {
       null,
       9
     );
+    wstcMint = await createMint(
+      connection,
+      wallet.payer,
+      wallet.publicKey,
+      null,
+      9
+    );
+    aqcMint = await createMint(
+      connection,
+      wallet.payer,
+      wallet.publicKey,
+      null,
+      9
+    );
 
     // Register tokens
     await program.methods
-      .initializeTokens(wtkMint, watcMint, wstMint)
+      .initializeTokens(wtkMint, watcMint, wstMint, wstcMint, aqcMint)
       .accounts({
         authority: wallet.publicKey,
       })
@@ -62,5 +78,7 @@ describe("tokens", () => {
     assert.equal(tokens.wtk.toString(), wtkMint.toString());
     assert.equal(tokens.watc.toString(), watcMint.toString());
     assert.equal(tokens.wst.toString(), wstMint.toString());
+    assert.equal(tokens.wstc.toString(), wstcMint.toString());
+    assert.equal(tokens.aqc.toString(), aqcMint.toString());
   });
 });

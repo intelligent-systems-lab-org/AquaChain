@@ -30,6 +30,10 @@ pub struct Reservoir {
     /// This value represents the upper limit for current_level.
     pub capacity: u64,
 
+    /// The maximum amount of waste water that can be processed by this reservoir.
+    /// Measured in the same units as current_level and capacity.     
+    pub max_allowable_waste: u64,
+
     /// The unique public key identifying this reservoir in the system.
     /// Used for authentication and reference in transactions.
     pub reservoir_key: Pubkey,
