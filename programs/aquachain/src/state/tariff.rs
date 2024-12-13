@@ -1,33 +1,88 @@
 use anchor_lang::prelude::*;
 
+/// Represents different types of penalties that can be applied to water usage
+///
+/// # Variants
+/// * `Fixed` - A constant penalty amount regardless of usage
+/// * `Linear` - A proportional penalty that scales with usage
+#[derive(InitSpace, AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, Eq, PartialEq)]
+pub enum PenaltyType {
+    /// A fixed penalty amount that is applied regardless of usage volume
+    Fixed(u64),
+    /// A penalty that increases linearly with usage volume based on a rate multiplier
+    Linear(u64),
+}
+
 /// Represents different types of water tariff structures that can be applied to billing.
 ///
 /// # Variants
-/// * `UniformIBT` - Uniform Increasing Block Tariff where rates increase with consumption
+/// * `Commercial` - Volumetric tariff structure for commercial consumers with fixed and variable rates
+/// * `Household` - Volumetric tariff structure for households with fixed and variable rates
+/// * `Lifeline` - Volumetric tariff structure for low-income households with base and excess rates
 /// * `SeasonalIBT` - Seasonal Increasing Block Tariff that varies by season with increasing rates
 /// * `SeasonalDBT` - Seasonal Decreasing Block Tariff that varies by season with decreasing rates
 #[derive(InitSpace, AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, Eq, PartialEq)]
 pub enum TariffType {
-    /// Standard tariff structure where rates increase with consumption blocks,
-    /// applied uniformly throughout the year
-    UniformIBT,
+    /// Volumetric tariff structure for commercial consumers where rates increase with consumption blocks
+    Commercial {
+        /// Fixed cost covering infrastructure and operational maintenance
+        fixed_cost: u64,
+        /// Volumetric rate within the contracted limit  
+        base_rate: u64,
+        /// Volumetric rate for usage exceeding the contracted capacity
+        excess_rate: u64,
+    },
+
+    /// Volumetric tariff structure for households where rates increase with consumption blocks
+    Household {
+        /// Fixed cost covering infrastructure and operational maintenance
+        fixed_cost: u64,
+        /// Volumetric rate within the contracted limit  
+        base_rate: u64,
+        /// Volumetric rate for usage exceeding the contracted capacity
+        excess_rate: u64,
+    },
+
+    /// Volumetric tariff structure that is applicable for low-income households
+    Lifeline {
+        /// Volumetric rate within the contracted limit  
+        base_rate: u64,
+        /// Volumetric rate for usage exceeding the contracted capacity
+        excess_rate: u64,
+    },
 
     /// Seasonal tariff structure where rates increase with consumption blocks
     /// and vary based on the season (e.g., higher in summer)
-    SeasonalIBT,
+    ///
+    /// # Fields
+    /// * `base_rate` - Base volumetric rate for water consumption
+    /// * `sensitivity_factor` - Factor adjusting rates based on reservoir levels
+    /// * `penalty` - Type of penalty applied during low reservoir conditions     
+    SeasonalIBT {
+        /// Volumetric rate within the contracted limit  
+        base_rate: u64,
+        /// A proportionality factor for block rate based on reservoir levels
+        sensitivity_factor: u64,
+        /// A penalty applied to water usage when reservoir levels are low
+        penalty: PenaltyType,
+    },
 
     /// Seasonal tariff structure where rates decrease with consumption blocks
     /// and vary based on the season
-    SeasonalDBT,
+    SeasonalDBT {
+        /// Volumetric rate within the contracted limit  
+        base_rate: u64,
+        /// A proportionality factor for block rate based on reservoir levels
+        sensitivity_factor: u64,
+    },
 }
 
 /// Represents a water utility tariff account containing rate information and configuration.
 ///
-/// This account stores the basic rate structure for both water usage and waste treatment,
+/// This account stores the basic rate structure for waste treatment,
 /// along with the tariff type and associated public key.
 ///
 /// # Fields
-/// * `water_rate` - Base rate charged per unit of water consumption
 /// * `waste_rate` - Base rate charged per unit of waste treatment
 /// * `tariff_type` - The type of tariff structure being applied
 /// * `tariff_key` - Public key associated with this tariff configuration
@@ -35,7 +90,6 @@ pub enum TariffType {
 /// # Example
 /// ```ignore
 /// let tariff = Tariff {
-///     water_rate: 100,  // Base rate for water usage
 ///     waste_rate: 50,   // Base rate for waste treatment
 ///     tariff_type: TariffType::UniformIBT,
 ///     tariff_key: pubkey,
@@ -44,10 +98,6 @@ pub enum TariffType {
 #[account]
 #[derive(InitSpace)]
 pub struct Tariff {
-    /// Base rate charged per unit of water consumption.
-    /// The actual rate may vary based on the tariff type and consumption level.
-    pub water_rate: u64,
-
     /// Base rate charged per unit of waste that requires treatment.
     /// This may be adjusted based on the type and volume of waste.
     pub waste_rate: u64,

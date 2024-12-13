@@ -44,29 +44,25 @@ pub struct InitializeTariff<'info> {
 /// # Arguments
 /// * `ctx` - Context containing the tariff account, agency signer and system program
 /// * `tariff_key` - Unique public key identifier for this tariff
-/// * `water_rate` - Rate charged for water consumption (must be > 0)
 /// * `waste_rate` - Rate charged for waste processing (must be > 0) 
 /// * `tariff_type` - Type of tariff (e.g. Residential, Commercial, etc)
 ///
 /// # Errors
-/// * `CustomError::InvalidRate` - If water_rate or waste_rate is 0
+/// * `CustomError::InvalidRate` - If waste_rate is 0
 ///
 /// # Returns
 /// * `Ok(())` on successful initialization 
 pub fn initialize_tariff(
     ctx: Context<InitializeTariff>,
     tariff_key: Pubkey,
-    water_rate: u64,
     waste_rate: u64,
     tariff_type: TariffType
 ) -> Result<()> {
     let tariff = &mut ctx.accounts.tariff;
 
-    require!(water_rate > 0, CustomError::InvalidRate);
     require!(waste_rate > 0, CustomError::InvalidRate);
 
     tariff.tariff_key = tariff_key;
-    tariff.water_rate = water_rate;
     tariff.waste_rate = waste_rate;
     tariff.tariff_type = tariff_type;
 

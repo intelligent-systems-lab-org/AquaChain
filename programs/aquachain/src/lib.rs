@@ -16,20 +16,18 @@ pub mod aquachain {
     pub fn initialize_tariff(
         ctx: Context<InitializeTariff>,
         tariff_key: Pubkey,
-        water_rate: u64,
         waste_rate: u64,
         tariff_type: TariffType,
     ) -> Result<()> {
-        instructions::initialize_tariff(ctx, tariff_key, water_rate, waste_rate, tariff_type)
+        instructions::initialize_tariff(ctx, tariff_key, waste_rate, tariff_type)
     }
 
     pub fn update_tariff_rates(
         ctx: Context<UpdateTariff>,
         tariff_key: Pubkey,
-        water_rate: u64,
         waste_rate: u64,
     ) -> Result<()> {
-        instructions::update_tariff_rates(ctx, tariff_key, water_rate, waste_rate)
+        instructions::update_tariff_rates(ctx, tariff_key, waste_rate)
     }
 
     pub fn update_tariff_type(
@@ -63,14 +61,14 @@ pub mod aquachain {
         tariff_key: Pubkey,
         reservoir_key: Pubkey,
         contracted_capacity: u64,
-        block_rate: u64,
+        contracted_waste_capacity: u64,
     ) -> Result<()> {
         instructions::register_consumer(
             ctx,
             tariff_key,
             reservoir_key,
             contracted_capacity,
-            block_rate,
+            contracted_waste_capacity,
         )
     }
 

@@ -45,29 +45,25 @@ pub struct UpdateTariff<'info> {
 /// # Arguments
 /// * `ctx` - Context containing the tariff account, agency signer and system program
 /// * `tariff_key` - Unique public key identifier for this tariff
-/// * `water_rate` - New water rate to set (must be greater than 0)
 /// * `waste_rate` - New waste rate to set (must be greater than 0)
 ///
 /// # Errors
 /// * `CustomError::Unauthorized` - If tariff_key doesn't match the account's key
-/// * `CustomError::InvalidRate` - If water_rate or waste_rate is 0
+/// * `CustomError::InvalidRate` - If waste_rate is 0
 ///
 /// # Returns
 /// * `Ok(())` on successful update
 pub fn update_tariff_rates(
     ctx: Context<UpdateTariff>,
     tariff_key: Pubkey,
-    water_rate: u64,
     waste_rate: u64,
 ) -> Result<()> {
     let tariff = &mut ctx.accounts.tariff;
 
     require_keys_eq!(tariff_key, tariff.tariff_key, CustomError::Unauthorized);
 
-    require!(water_rate > 0, CustomError::InvalidRate);
     require!(waste_rate > 0, CustomError::InvalidRate);
 
-    tariff.water_rate = water_rate;
     tariff.waste_rate = waste_rate;
 
     msg!("Rates updated.");

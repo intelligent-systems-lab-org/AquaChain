@@ -18,7 +18,7 @@ describe("tokens", () => {
   let watcMint: PublicKey;
   let wstMint: PublicKey;
   let wstcMint: PublicKey;
-  let aqcMint : PublicKey;
+  let aqcMint: PublicKey;
 
   before(async () => {
     // Initialize token mints
