@@ -18,6 +18,10 @@ describe("reservoir", () => {
 
   const initialReservoirLevel = 950; // 0.95
   const initialReservoirCapacity = 1000; // 1.00
+  const initialMaxWaste = 400; // 0.4
+  const initialMinLevel = 200; // 0.2
+  const initialAQCConversionRate = 10; // 0.01
+  const initialAQCDiscountRate = 5; // 0.05
 
   before(async () => {
     // Initialize accounts
@@ -37,7 +41,11 @@ describe("reservoir", () => {
       .initializeReservoir(
         reservoirKey,
         new anchor.BN(initialReservoirLevel),
-        new anchor.BN(initialReservoirCapacity)
+        new anchor.BN(initialReservoirCapacity),
+        new anchor.BN(initialMaxWaste),
+        new anchor.BN(initialMinLevel),
+        new anchor.BN(initialAQCConversionRate),
+        new anchor.BN(initialAQCDiscountRate)
       )
       .accounts({
         agency: wallet.publicKey,
@@ -52,6 +60,16 @@ describe("reservoir", () => {
     // Assert that the water and waste rates are set as expected
     assert.equal(stateAccount.currentLevel.toNumber(), initialReservoirLevel);
     assert.equal(stateAccount.capacity.toNumber(), initialReservoirCapacity);
+    assert.equal(stateAccount.maxAllowableWaste.toNumber(), initialMaxWaste);
+    assert.equal(stateAccount.minAllowableLevel.toNumber(), initialMinLevel);
+    assert.equal(
+      stateAccount.aqcConversionFactor.toNumber(),
+      initialAQCConversionRate
+    );
+    assert.equal(
+      stateAccount.aqcDiscountFactor.toNumber(),
+      initialAQCDiscountRate
+    );
   });
 
   it("should update levels on the initialized reservoir", async () => {
@@ -62,7 +80,11 @@ describe("reservoir", () => {
       .updateReservoir(
         reservoirKey,
         new anchor.BN(newReservoirLevel),
-        new anchor.BN(newReservoirCapacity)
+        new anchor.BN(newReservoirCapacity),
+        new anchor.BN(initialMaxWaste),
+        new anchor.BN(initialMinLevel),
+        new anchor.BN(initialAQCConversionRate),
+        new anchor.BN(initialAQCDiscountRate)
       )
       .accounts({
         agency: wallet.publicKey,
@@ -92,7 +114,11 @@ describe("reservoir", () => {
       .initializeReservoir(
         newReservoirKey,
         new anchor.BN(400),
-        new anchor.BN(500)
+        new anchor.BN(500),
+        new anchor.BN(initialMaxWaste),
+        new anchor.BN(initialMinLevel),
+        new anchor.BN(initialAQCConversionRate),
+        new anchor.BN(initialAQCDiscountRate)
       )
       .accounts({
         agency: wallet.publicKey,
@@ -104,6 +130,16 @@ describe("reservoir", () => {
 
     assert.equal(newReservoir.currentLevel.toNumber(), 400);
     assert.equal(newReservoir.capacity.toNumber(), 500);
+    assert.equal(newReservoir.maxAllowableWaste.toNumber(), initialMaxWaste);
+    assert.equal(newReservoir.minAllowableLevel.toNumber(), initialMinLevel);
+    assert.equal(
+      newReservoir.aqcConversionFactor.toNumber(),
+      initialAQCConversionRate
+    );
+    assert.equal(
+      newReservoir.aqcDiscountFactor.toNumber(),
+      initialAQCDiscountRate
+    );
     assert.equal(
       newReservoir.reservoirKey.toBase58(),
       newReservoirKey.toBase58()

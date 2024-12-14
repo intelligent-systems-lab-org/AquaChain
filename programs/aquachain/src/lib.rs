@@ -43,8 +43,21 @@ pub mod aquachain {
         reservoir_key: Pubkey,
         current_level: u64,
         capacity: u64,
+        max_allowable_waste: u64,
+        min_allowable_level: u64,
+        aqc_conversion_factor: u64,
+        aqc_discount_factor: u64,
     ) -> Result<()> {
-        instructions::initialize_reservoir(ctx, reservoir_key, current_level, capacity)
+        instructions::initialize_reservoir(
+            ctx,
+            reservoir_key,
+            current_level,
+            capacity,
+            max_allowable_waste,
+            min_allowable_level,
+            aqc_conversion_factor,
+            aqc_discount_factor,
+        )
     }
 
     pub fn update_reservoir(
@@ -52,8 +65,12 @@ pub mod aquachain {
         reservoir_key: Pubkey,
         current_level: u64,
         capacity: u64,
+        max_allowable_waste: u64,
+        min_allowable_level: u64,
+        aqc_conversion_factor: u64,
+        aqc_discount_factor: u64,
     ) -> Result<()> {
-        instructions::update_reservoir(ctx, reservoir_key, current_level, capacity)
+        instructions::update_reservoir(ctx, reservoir_key, current_level, capacity, max_allowable_waste, min_allowable_level, aqc_conversion_factor, aqc_discount_factor)
     }
 
     pub fn register_consumer(
@@ -142,7 +159,14 @@ pub mod aquachain {
         wastewater_capacity_token: Pubkey,
         aquacoin: Pubkey,
     ) -> Result<()> {
-        instructions::initialize_tokens(ctx, water_token, water_capacity_token, waste_token, wastewater_capacity_token, aquacoin)
+        instructions::initialize_tokens(
+            ctx,
+            water_token,
+            water_capacity_token,
+            waste_token,
+            wastewater_capacity_token,
+            aquacoin,
+        )
     }
 }
 
@@ -162,5 +186,5 @@ pub enum CustomError {
     #[msg("Unauthorized: only the owner can perform this action.")]
     Unauthorized,
     #[msg("Overpaid: payment exceeds the necessary amount.")]
-    OverPayment
+    OverPayment,
 }
