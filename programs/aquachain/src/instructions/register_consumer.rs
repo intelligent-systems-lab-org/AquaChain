@@ -19,7 +19,9 @@ use anchor_spl::{
 /// * `reservoir` - The PDA reservoir account assigned to this consumer  
 /// * `agency` - The authority that can register new consumers
 /// * `consumer_watc` - The consumer's WATC token account
+/// * `consumer_wstc` - The consumer's WSTC token account
 /// * `watc_mint` - The WATC token mint
+/// * `wstc_mint` - The WSTC token mint
 /// * `system_program` - Required for account creation
 /// * `token_program` - Required for token operations
 /// * `associated_token_program` - Required for associated token account
@@ -60,30 +62,32 @@ pub struct RegisterConsumer<'info> {
     pub agency: Signer<'info>,
     #[account(mut, associated_token::mint = watc_mint,  associated_token::authority = consumer)]
     pub consumer_watc: Account<'info, TokenAccount>, // Consumer's WaterCapacityToken account
+    #[account(mut, associated_token::mint = wstc_mint,  associated_token::authority = consumer)]
+    pub consumer_wstc: Account<'info, TokenAccount>, // Consumer's WasteWaterCapacityToken account
     #[account(mut, mint::authority = agency, mint::decimals = 9)]
     pub watc_mint: Account<'info, Mint>, // Mint for the WaterCapacityToken
+    #[account(mut, mint::authority = agency, mint::decimals = 9)]
+    pub wstc_mint: Account<'info, Mint>, // Mint for the WasteWaterCapacityToken
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
 }
 
-// Register a new consumer with contracted capacity and block rate
-/// Register a new consumer with contracted capacity and block rate
+// Register a new consumer with contracted water and wastewater capacities
 ///
 /// This function registers a new consumer account and initializes it with the provided
-/// contracted capacity and block rate. It also mints WATC tokens to the consumer based
-/// on their contracted capacity.
+/// contracted water and wastewater capacities. It also mints WATC and WSTC tokens to the consumer based
+/// on their contracted capacities.
 ///
 /// # Arguments
 /// * `ctx` - Context containing consumer, tariff, reservoir, agency and token accounts
 /// * `tariff_key` - Public key of the tariff assigned to this consumer
 /// * `reservoir_key` - Public key of the reservoir assigned to this consumer
 /// * `contracted_capacity` - Amount of water capacity contracted by the consumer (must be > 0)
-/// * `block_rate` - Rate charged per block of water usage (must be > 0)
+/// * `contracted_waste_capacity` - Amount of wastewater capacity contracted by the consumer (must be > 0)
 ///
 /// # Errors
-/// * `CustomError::InvalidCapacity` - If contracted_capacity is 0
-/// * `CustomError::InvalidRate` - If block_rate is 0
+/// * `CustomError::InvalidCapacity` - If contracted_capacity or contracted_waste_capacity are 0
 ///
 /// # Returns
 /// * `Ok(())` on successful registration
@@ -92,18 +96,18 @@ pub fn register_consumer(
     tariff_key: Pubkey,
     reservoir_key: Pubkey,
     contracted_capacity: u64,
-    block_rate: u64,
+    contracted_waste_capacity: u64,
 ) -> Result<()> {
     let consumer = &mut ctx.accounts.consumer;
 
     // Validation: Ensure capacity and rate are non-zero
     require!(contracted_capacity > 0, CustomError::InvalidCapacity);
-    require!(block_rate > 0, CustomError::InvalidRate);
+    require!(contracted_waste_capacity > 0, CustomError::InvalidCapacity);
 
     consumer.assigned_tariff = tariff_key;
     consumer.assigned_reservoir = reservoir_key;
 
-    consumer.block_rate = block_rate;
+    consumer.contracted_waste_capacity = contracted_waste_capacity;
     consumer.contracted_capacity = contracted_capacity;
 
     // Mint WATC tokens to the consumer based on contracted capacity
@@ -117,6 +121,19 @@ pub fn register_consumer(
             },
         ),
         contracted_capacity,
+    )?;
+
+    // Mint WSTC tokens to the consumer based on contracted capacity
+    token::mint_to(
+        CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            token::MintTo {
+                to: ctx.accounts.consumer_wstc.to_account_info(),
+                authority: ctx.accounts.agency.to_account_info(),
+                mint: ctx.accounts.wstc_mint.to_account_info(),
+            },
+        ),
+        contracted_waste_capacity,
     )?;
 
     msg!("New consumer registered with contracted capacity and block rate.");

@@ -18,8 +18,10 @@ use anchor_spl::{
 /// * `tariff` - The PDA account containing tariff configuration
 /// * `reservoir` - The PDA account containing reservoir configuration  
 /// * `agency` - The authority that can sign for minting tokens
-/// * `consumer_watc` - The consumer's WaterCapacityToken account
-/// * `watc_mint` - The mint for WaterCapacityTokens
+/// * `consumer_watc` - The consumer's WATC token account
+/// * `consumer_wstc` - The consumer's WSTC token account
+/// * `watc_mint` - The WATC token mint
+/// * `wstc_mint` - The WSTC token mint
 /// * `system_program` - Required for account operations
 /// * `token_program` - Required for token operations
 /// * `associated_token_program` - Required for associated token operations
@@ -60,29 +62,32 @@ pub struct UpdateConsumer<'info> {
     pub agency: Signer<'info>,
     #[account(mut, associated_token::mint = watc_mint,  associated_token::authority = consumer)]
     pub consumer_watc: Account<'info, TokenAccount>, // Consumer's WaterCapacityToken account
+    #[account(mut, associated_token::mint = wstc_mint,  associated_token::authority = consumer)]
+    pub consumer_wstc: Account<'info, TokenAccount>, // Consumer's WasteWaterCapacityToken account
     #[account(mut, mint::authority = agency, mint::decimals = 9)]
     pub watc_mint: Account<'info, Mint>, // Mint for the WaterCapacityToken
+    #[account(mut, mint::authority = agency, mint::decimals = 9)]
+    pub wstc_mint: Account<'info, Mint>, // Mint for the WasteWaterCapacityToken
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
 }
 
-/// Update block rate and contracted capacity of existing consumer account
+/// Update contracted capacities of existing consumer account
 ///
-/// Updates an existing consumer's configuration including contracted capacity and block rate.
-/// Burns any existing WATC tokens and mints new ones based on the updated capacity.
+/// Updates an existing consumer's configuration including contracted water and waste capacities.
+/// Burns any existing WATC and WSTC tokens and mints new ones based on the updated capacities.
 ///
 /// # Arguments
 /// * `ctx` - Context containing consumer account, tariff, reservoir, agency and token accounts
 /// * `tariff_key` - Public key identifying the tariff to assign
 /// * `reservoir_key` - Public key identifying the reservoir to assign  
 /// * `contracted_capacity` - New contracted capacity value (must be > 0)
-/// * `block_rate` - New block rate value (must be > 0)
+/// * `contracted_waste_capacity` - New contracted wastewater capacity value (must be > 0)
 ///
 /// # Errors
 /// * `CustomError::Unauthorized` - If tariff_key or reservoir_key don't match accounts
-/// * `CustomError::InvalidCapacity` - If contracted_capacity is 0
-/// * `CustomError::InvalidRate` - If block_rate is 0
+/// * `CustomError::InvalidCapacity` - If contracted_capacity or contracted_waste_capacity are 0
 ///
 /// # Returns
 /// * `Ok(())` on successful update
@@ -91,7 +96,7 @@ pub fn update_consumer(
     tariff_key: Pubkey,
     reservoir_key: Pubkey,
     contracted_capacity: u64,
-    block_rate: u64,
+    contracted_waste_capacity: u64,
 ) -> Result<()> {
     let consumer = &mut ctx.accounts.consumer;
     let tariff = &ctx.accounts.tariff;
@@ -106,10 +111,10 @@ pub fn update_consumer(
 
     // Validation: Ensure capacity and rate are non-zero
     require!(contracted_capacity > 0, CustomError::InvalidCapacity);
-    require!(block_rate > 0, CustomError::InvalidRate);
+    require!(contracted_waste_capacity > 0, CustomError::InvalidCapacity);
 
     consumer.contracted_capacity = contracted_capacity;
-    consumer.block_rate = block_rate;
+    consumer.contracted_waste_capacity = contracted_waste_capacity;
 
     // Burn any existing WATC tokens from the consumer
     if ctx.accounts.consumer_watc.amount > 0 {
@@ -137,6 +142,34 @@ pub fn update_consumer(
             },
         ),
         contracted_capacity,
+    )?;
+
+    // Burn any existing WSTC tokens from the consumer
+    if ctx.accounts.consumer_wstc.amount > 0 {
+        token::burn(
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                token::Burn {
+                    mint: ctx.accounts.wstc_mint.to_account_info(),
+                    from: ctx.accounts.consumer_wstc.to_account_info(),
+                    authority: ctx.accounts.consumer.to_account_info(),
+                },
+            ),
+            ctx.accounts.consumer_wstc.amount,
+        )?;
+    }
+
+    // Mint WSTC tokens to the consumer based on contracted waste capacity
+    token::mint_to(
+        CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            token::MintTo {
+                to: ctx.accounts.consumer_wstc.to_account_info(),
+                authority: ctx.accounts.agency.to_account_info(),
+                mint: ctx.accounts.wstc_mint.to_account_info(),
+            },
+        ),
+        contracted_waste_capacity,
     )?;
 
     msg!("Consumer block rate and consumer capacity updated.");

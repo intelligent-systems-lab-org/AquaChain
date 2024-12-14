@@ -18,21 +18,30 @@ describe("consumer", () => {
   const wallet = provider.wallet as anchor.Wallet;
 
   let watcMint: PublicKey;
+  let wstcMint: PublicKey;
   let consumerWatcAccount: PublicKey;
+  let consumerWstcAccount: PublicKey;
   let tariffPDA: PublicKey;
   let tariffKey: PublicKey;
   let reservoirPDA: PublicKey;
   let reservoirKey: PublicKey;
   let consumer: Keypair;
 
-  const initialWaterRate = 500; // 0.500
-  const initialWasteRate = 200; // 0.200
+  const initialFixedRate = 100000 // 100.000
+  const initialWaterRate = 2000; // 2.000
+  const initialWasteRate = 3000; // 3.000
+  const initialExcessRate = 4000; // 4.000
+
 
   const initialReservoirLevel = 950000; // 950.000
   const initialReservoirCapacity = 1000000; // 1000.000
+  const initialMaxWaste = 400; // 0.4
+  const initialMinLevel = 200; // 0.2
+  const initialAQCConversionRate = 10; // 0.01
+  const initialAQCDiscountRate = 5; // 0.05
 
   const initialContractedCapacity = 100000; // 100.000
-  const initialBlockRate = 800; // 0.800
+  const initialContractedWasteCapacity = 20000; // 20.00
 
   before(async () => {
     // Initialize accounts
@@ -68,6 +77,14 @@ describe("consumer", () => {
       9
     );
 
+    wstcMint = await createMint(
+        connection,
+        wallet.payer,
+        wallet.publicKey,
+        null,
+        9
+      );
+
     // Create token accounts
     consumerWatcAccount = await getOrCreateAssociatedTokenAccount(
       connection,
@@ -76,13 +93,25 @@ describe("consumer", () => {
       consumer.publicKey
     ).then((account) => account.address);
 
+    consumerWstcAccount = await getOrCreateAssociatedTokenAccount(
+        connection,
+        wallet.payer,
+        wstcMint,
+        consumer.publicKey
+      ).then((account) => account.address);
+
     // Initialize a tariff
     await program.methods
       .initializeTariff(
         tariffKey,
-        new anchor.BN(initialWaterRate),
         new anchor.BN(initialWasteRate),
-        { uniformIbt: {} }
+        {
+          commercial: {
+            fixedCost: new anchor.BN(initialFixedRate),
+            baseRate: new anchor.BN(initialWaterRate),
+            excessRate: new anchor.BN(initialExcessRate),
+          }
+        }
       )
       .accounts({
         agency: wallet.publicKey,
@@ -94,7 +123,11 @@ describe("consumer", () => {
       .initializeReservoir(
         reservoirKey,
         new anchor.BN(initialReservoirLevel),
-        new anchor.BN(initialReservoirCapacity)
+        new anchor.BN(initialReservoirCapacity),
+        new anchor.BN(initialMaxWaste),
+        new anchor.BN(initialMinLevel),
+        new anchor.BN(initialAQCConversionRate),
+        new anchor.BN(initialAQCDiscountRate)
       )
       .accounts({
         agency: wallet.publicKey,
@@ -106,12 +139,13 @@ describe("consumer", () => {
         tariffKey,
         reservoirKey,
         new anchor.BN(initialContractedCapacity),
-        new anchor.BN(initialBlockRate)
+        new anchor.BN(initialContractedWasteCapacity)
       )
       .accounts({
         consumer: consumer.publicKey,
         agency: wallet.publicKey,
         watcMint: watcMint,
+        wstcMint: wstcMint,
       })
       .signers([consumer])
       .rpc();
@@ -128,7 +162,7 @@ describe("consumer", () => {
       consumerAccount.contractedCapacity.toNumber(),
       initialContractedCapacity
     );
-    assert.equal(consumerAccount.blockRate.toNumber(), initialBlockRate);
+    assert.equal(consumerAccount.contractedWasteCapacity.toNumber(), initialContractedWasteCapacity);
 
     // Check the balance of WATC tokens in the consumer's account
     const consumerWatcBalance =
@@ -137,23 +171,32 @@ describe("consumer", () => {
       consumerWatcBalance.value.amount,
       initialContractedCapacity.toString()
     ); // Should match contracted capacity
+
+    // Check the balance of WSTC tokens in the consumer's account
+    const consumerWstcBalance =
+      await provider.connection.getTokenAccountBalance(consumerWstcAccount);
+    assert.equal(
+        consumerWstcBalance.value.amount,
+        initialContractedWasteCapacity.toString()
+    );
   });
 
   it("should update rates on the initialized consumer", async () => {
     let newContractedCapacity = 200000; // 200.000
-    let newBlockRate = 1000; // 1.000
+    let newWasteCapacity = 1000; // 1.000
 
     await program.methods
       .updateConsumer(
         tariffKey,
         reservoirKey,
         new anchor.BN(newContractedCapacity),
-        new anchor.BN(newBlockRate)
+        new anchor.BN(newWasteCapacity)
       )
       .accounts({
         consumer: consumer.publicKey,
         agency: wallet.publicKey,
         watcMint: watcMint,
+        wstcMint: wstcMint,
       })
       .signers([consumer])
       .rpc();
@@ -166,7 +209,7 @@ describe("consumer", () => {
       consumerAccount.contractedCapacity.toNumber(),
       newContractedCapacity
     );
-    assert.equal(consumerAccount.blockRate.toNumber(), newBlockRate);
+    assert.equal(consumerAccount.contractedWasteCapacity.toNumber(), newWasteCapacity);
 
     // Check the balance of WATC tokens in the consumer's account
     const consumerWatcBalance =
@@ -174,6 +217,14 @@ describe("consumer", () => {
     assert.equal(
       consumerWatcBalance.value.amount,
       newContractedCapacity.toString()
+    );
+
+    // Check the balance of WSTC tokens in the consumer's account
+    const consumerWstcBalance =
+    await provider.connection.getTokenAccountBalance(consumerWstcAccount);
+    assert.equal(
+        consumerWstcBalance.value.amount,
+        newWasteCapacity.toString()
     );
   });
 
@@ -195,9 +246,14 @@ describe("consumer", () => {
     await program.methods
       .initializeTariff(
         newTariffKey,
-        new anchor.BN(newWaterRate),
         new anchor.BN(newWasteRate),
-        { uniformIbt: {} }
+        {
+          commercial: {
+            fixedCost: new anchor.BN(initialFixedRate),
+            baseRate: new anchor.BN(newWaterRate),
+            excessRate: new anchor.BN(initialExcessRate),
+          }
+        }
       )
       .accounts({
         agency: wallet.publicKey,
@@ -235,8 +291,8 @@ describe("consumer", () => {
       consumerTariffPDA
     );
     assert.equal(
-      updatedTariff.waterRate.toNumber(),
-      consumerTariff.waterRate.toNumber()
+      updatedTariff.tariffType.commercial.baseRate.toNumber(),
+      consumerTariff.tariffType.commercial.baseRate.toNumber()
     );
     assert.equal(
       updatedTariff.wasteRate.toNumber(),
@@ -263,7 +319,11 @@ describe("consumer", () => {
       .initializeReservoir(
         newReservoirKey,
         new anchor.BN(newReservoirLevel),
-        new anchor.BN(newReservoirCapacity)
+        new anchor.BN(newReservoirCapacity),
+        new anchor.BN(initialMaxWaste),
+        new anchor.BN(initialMinLevel),
+        new anchor.BN(initialAQCConversionRate),
+        new anchor.BN(initialAQCDiscountRate)
       )
       .accounts({
         agency: wallet.publicKey,

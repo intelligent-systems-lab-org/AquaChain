@@ -7,30 +7,29 @@ use anchor_lang::prelude::*;
 /// associations with specific tariffs and reservoirs.
 ///
 /// # Fields
-/// * `block_rate` - The rate at which the consumer is charged beyond their contracted capacity
 /// * `contracted_capacity` - The maximum amount of water allocated to this consumer
+/// * `contracted_waste_capacity` - The maximum amount of wastewater the consumer can produce
 /// * `assigned_tariff` - Reference to the tariff structure applied to this consumer
 /// * `assigned_reservoir` - Reference to the reservoir serving this consumer
 ///
 /// # Example
 /// ```ignore
 /// let consumer = Consumer {
-///     block_rate: 100,           // rate charged beyond contracted capacity
 ///     contracted_capacity: 1000,  // Maximum allocation
+///     contracted_waste_capacity: 500, // Maximum wastewater allocation
 ///     assigned_tariff: tariff_pubkey,
 ///     assigned_reservoir: reservoir_pubkey,
 /// };
-/// ```
 #[account]
 #[derive(InitSpace)]
 pub struct Consumer {
-    /// The rate at which the consumer is charged beyond their contracted capacity.
-    /// Represents the maximum flow rate or consumption rate per time unit.
-    pub block_rate: u64,
-
     /// The maximum amount of water the consumer is contracted to use.
     /// This represents their total allocation or quota.
     pub contracted_capacity: u64,
+
+    /// The maximum amount of wastewater the consumer is allowed to produce for efficient wastewater disposal.
+    /// Consumer can exceed this threshold but is incentivized through pricing to stay below it.
+    pub contracted_waste_capacity: u64,
 
     /// Reference to the tariff structure assigned to this consumer.
     /// Links to a Tariff account that determines the pricing structure.
