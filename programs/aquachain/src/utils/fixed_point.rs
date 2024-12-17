@@ -28,7 +28,7 @@ impl FixedPoint {
     ///
     /// # Returns
     /// The fixed-point number as a u64, maintaining the scale factor
-    fn to_u64(&self) -> u64 {
+    pub fn to_u64(&self) -> u64 {
         self.0 as u64
     }
 
