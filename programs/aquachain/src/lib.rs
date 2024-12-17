@@ -168,6 +168,14 @@ pub mod aquachain {
             aquacoin,
         )
     }
+
+    pub fn redeem_aqc(
+        ctx: Context<RedeemAQC>,
+        tariff_key: Pubkey,
+        reservoir_key: Pubkey
+    ) -> Result<()>  {
+        instructions::redeem_aqc(ctx, tariff_key, reservoir_key)
+    }
 }
 
 // Define custom errors
